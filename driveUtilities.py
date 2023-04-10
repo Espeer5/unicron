@@ -19,7 +19,7 @@ PWM_FREQ = 1000
 
 def driveForward(left_motor, right_motor, speed, duration):
     left_motor.setSpeed(speed)
-    right_motor.setSpeed(-(speed+20))
+    right_motor.setSpeed(-(speed+18))
     time.sleep(duration)
     
 def driveBackward(left_motor, right_motor, speed, duration):

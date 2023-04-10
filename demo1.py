@@ -12,9 +12,9 @@ import pigpio
 from motor import Motor
 
 TOP_SPEED = 235
-DRIVE_DUR = 1
+DRIVE_DUR = 2.95
 ROT_SPEED = 200
-ROT_DUR = .65
+ROT_DUR = .755
 
 if __name__ == "__main__":
 
