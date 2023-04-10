@@ -34,10 +34,10 @@ if __name__ == "__main__":
     for i in range(4):
 
         # Drive in the direction the robot is facing for the given duration
-        du.driveForward(left_motor, right_motor, TOP_SPEED, DRIVE_DUR)
+        du.driveStraight(left_motor, right_motor, TOP_SPEED, DRIVE_DUR)
 
         # Execute a 90 degree clockwise turn
-        du.turnRight(left_motor, right_motor, ROT_SPEED, ROT_DUR)
+        du.rotate(left_motor, right_motor, ROT_SPEED, ROT_DUR)
 
     # Disable the motors and disconnect the interface
     du.disableDrive(left_motor, right_motor)
