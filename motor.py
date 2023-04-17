@@ -8,36 +8,35 @@ import pigpio
 
 class Motor():
 	
-	def __init__ (self, io, legAPin, legBPin, pwm_freq):
+	def __init__ (self, io, pins, pwm_freq):
 		"""Initialize motor
 		Sets the pins as output, the PWM frequency, and sets speed to 0
 		
 		Args:
 			io: gpio object
-			legAPin: pin1
-			legBPin: pin2
-			pwm_freq: PWM frequency (1000 Hz recommended)
+			pins: the tuple of motor pins (pinA, pinB)
+			pwm_freq: PWM frequency
 		"""
 		self.io = io
-		self.legAPin = legAPin
-		self.legBPin = legBPin
+		self.legAPin = pins[0]
+		self.legBPin = pins[1]
 		self.pwm_freq = pwm_freq
 		
 		# Set up the four pins as output
-		self.io.set_mode(legAPin, pigpio.OUTPUT)
-		self.io.set_mode(legBPin, pigpio.OUTPUT)
+		self.io.set_mode(self.legAPin, pigpio.OUTPUT)
+		self.io.set_mode(self.legBPin, pigpio.OUTPUT)
 		
 		# Set resolution for PWM
-		io.set_PWM_range(legAPin, 255)
-		io.set_PWM_range(legBPin, 255)
+		io.set_PWM_range(self.legAPin, 255)
+		io.set_PWM_range(self.legBPin, 255)
 		
 		# Set the PWM frequency
-		self.io.set_PWM_frequency(legAPin, pwm_freq)
-		self.io.set_PWM_frequency(legBPin, pwm_freq)
+		self.io.set_PWM_frequency(self.legAPin, pwm_freq)
+		self.io.set_PWM_frequency(self.legBPin, pwm_freq)
 
 		# Clear all pins, just in case.
-		self.io.set_PWM_dutycycle(legAPin, 0)
-		self.io.set_PWM_dutycycle(legBPin, 0)
+		self.io.set_PWM_dutycycle(self.legAPin, 0)
+		self.io.set_PWM_dutycycle(self.legBPin, 0)
 		
 	def setPWMFreq (self, freq):
 		"""Sets the PWM frequency of the motor

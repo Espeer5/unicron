@@ -23,8 +23,9 @@ def driveStraight(left_motor, right_motor, speed, duration):
       Drives the robot in a straight line at the given speed for the given duration
     """
     left_motor.setSpeed(speed)
-    right_motor.setSpeed(-(speed+18))
+    right_motor.setSpeed(-(speed+20))
     time.sleep(duration)
+    disableDrive(left_motor, right_motor)
     
 
 def rotate(left_motor, right_motor, speed, duration):
@@ -34,6 +35,7 @@ def rotate(left_motor, right_motor, speed, duration):
     left_motor.setSpeed(speed)
     right_motor.setSpeed(speed)
     time.sleep(duration)
+    disableDrive(left_motor, right_motor)
     
 
 def disableDrive(left_motor, right_motor):

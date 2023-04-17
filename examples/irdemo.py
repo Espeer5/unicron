@@ -14,9 +14,9 @@ import time
 import traceback
 
 # Define the IR pins.
-PIN_IR_LEFT   = FIXME      # Default GPIO Channel for Left   IR Detector
-PIN_IR_MIDDLE = FIXME      # Default GPIO Channel for Middle IR Detector
-PIN_IR_RIGHT  = FIXME      # Default GPIO Channel for Right  IR Detector
+PIN_IR_LEFT   = 14      # Default GPIO Channel for Left   IR Detector
+PIN_IR_MIDDLE = 15      # Default GPIO Channel for Middle IR Detector
+PIN_IR_RIGHT  = 18      # Default GPIO Channel for Right  IR Detector
 
 
 #

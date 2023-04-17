@@ -10,11 +10,12 @@
 import driveUtilities as du
 import pigpio
 from motor import Motor
+import time
 
 TOP_SPEED = 235
-DRIVE_DUR = 2.95
+DRIVE_DUR = 2.6
 ROT_SPEED = 200
-ROT_DUR = .755
+ROT_DUR = .7
 
 if __name__ == "__main__":
 
@@ -35,9 +36,11 @@ if __name__ == "__main__":
 
         # Drive in the direction the robot is facing for the given duration
         du.driveStraight(left_motor, right_motor, TOP_SPEED, DRIVE_DUR)
+        time.sleep(.5)
 
         # Execute a 90 degree clockwise turn
         du.rotate(left_motor, right_motor, ROT_SPEED, ROT_DUR)
+        time.sleep(.5)
 
     # Disable the motors and disconnect the interface
     du.disableDrive(left_motor, right_motor)
