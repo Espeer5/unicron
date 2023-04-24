@@ -74,6 +74,11 @@ class InterDetector:
     def __init__(self, linesensor, T):
         self.filters = Filters(linesensor, T)
 
+    def update(self):
+        """ Updates the filtered values of each sensor
+        """
+        self.filters.update()
+
     def check(self):
         """ return 1 is an intersection is detected, 0 otherwise """
         if self.filters.get() == [1, 1, 1]:

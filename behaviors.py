@@ -38,7 +38,7 @@ def alternate(driveSys, sensor):
     while True:
         if line_follow(driveSys, sensor) == INTERSECTION:
             # Drive forward to place wheels on intersection
-            time.sleep(.3)
+            time.sleep(.2)
             direction = dirMap[turn_count % 2]
             exec_turn(driveSys, sensor, direction)
             turn_count += 1
@@ -54,18 +54,19 @@ def line_follow(driveSys, sensor):
                         sensing
     """
     LR_DET_RESPONSE = {-1: (driveSys.drive, ["HOOK", "LEFT"]),
-                        0: (exec_turn, [driveSys, sensor, "RIGHT"]),
+                        0: (driveSys.stop, []),
                         1: (driveSys.drive, ["HOOK", "RIGHT"])} 
 
-    ids = InterDetector(sensor, .06)
+    ids = InterDetector(sensor, .04)
     lr = LRDetector(sensor, .01)
     while True:
         reading = sensor.read()
+        ids.update()
         if reading == (1, 1, 1) and ids.check():
             driveSys.drive("STRAIGHT")
             return INTERSECTION
         lr.update()
-	# robot is entirely off the line
+	    # robot is entirely off the line
         if reading == (0, 0, 0):
             lr_rd = lr.get()
             resp = LR_DET_RESPONSE[lr_rd]
@@ -73,9 +74,6 @@ def line_follow(driveSys, sensor):
         elif reading in FEEDBACK_TABLE: 
             driveSys.drive(FEEDBACK_TABLE.get(reading)[0], \
 	        FEEDBACK_TABLE.get(reading)[1])
-	# unknown state of controller so raise exception
-        else:
-            raise BaseException("Unknown state of IR controller readings")   
     
 
 def exec_turn(driveSys, sensor, direction):
