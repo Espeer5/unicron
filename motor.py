@@ -64,5 +64,4 @@ class Motor():
 			
 	def disable(self):
 		"""Disables motor in case of shutdown"""
-		self.io.set_PWM_dutycycle(self.legAPin, 0)
-		self.io.set_PWM_dutycycle(self.legBPin, 0)
+		self.setSpeed(0)

@@ -11,7 +11,8 @@ Date: 4/16/2023
 # Imports
 from motor import Motor
 import pigpio
-from constants import L_MOTOR_SPEED, R_MOTOR_SPEED
+import constants as const
+import time
 
 class DriveSystem():
     """ This class instantiates the left and right Motor objects and provides 
@@ -26,10 +27,9 @@ class DriveSystem():
     """
 
     # Available drive modes and their corresponding offsets
-    # Define Motor speed offsets in terms of deviation from the average l/r speed
-    MOTOR_SPEED = (L_MOTOR_SPEED + R_MOTOR_SPEED) / 2
-    MODES = {"STRAIGHT": 0, "VEER": MOTOR_SPEED/12, "STEER": MOTOR_SPEED/6,
-            "TURN": MOTOR_SPEED/2, "HOOK": MOTOR_SPEED, "SPIN": 2 * MOTOR_SPEED}
+    # Define Motor speed offsets in as fractions of normal motor speed
+    MODES = {"STRAIGHT": 0, "VEER": 1/7, "STEER": 1/4.9,
+            "TURN": 1/2, "HOOK": 1, "SPIN": 2}
 
     def __init__(self, io, leftMPins, rightMPins, PWMFreq):
         # instantiate the left and right Motor instances
@@ -68,11 +68,31 @@ class DriveSystem():
         
         # If direction is left, slow the left motor
         if(direction == "LEFT"):
-            self.left_motor.setSpeed(L_MOTOR_SPEED - self.MODES.get(mode))
-            self.right_motor.setSpeed(-R_MOTOR_SPEED)
+            self.left_motor.setSpeed(const.L_MOTOR_SPEED - (self.MODES[mode]*const.L_MOTOR_SPEED))
+            self.right_motor.setSpeed(-const.R_MOTOR_SPEED)
 
         # If direction is right, slow the right motor
         # This case also runs if direction is straight with offset 0
         else:
-            self.left_motor.setSpeed(L_MOTOR_SPEED)
-            self.right_motor.setSpeed(-(R_MOTOR_SPEED - self.MODES.get(mode)))
+            self.left_motor.setSpeed(const.L_MOTOR_SPEED)
+            self.right_motor.setSpeed(-(const.R_MOTOR_SPEED - (self.MODES[mode]*const.R_MOTOR_SPEED)))
+
+
+def test_flower():
+    print("Setting up the GPIO...")
+    io = pigpio.pi()
+    if not io.connected:
+        print("Unable to connection to pigpio unicron!")
+        sys.exit(0)
+    print("GPIO ready...")
+    driveSys = DriveSystem(io, const.L_MOTOR_PINS, const.R_MOTOR_PINS, \
+                           const.PWM_FREQ)
+    for style in driveSys.MODES:
+        if style in ["STRAIGHT", "VEER", "STEER"]:
+            continue
+        for direction in ["LEFT", "RIGHT"]:
+            driveSys.drive(style, direction)
+            time.sleep(4)
+            driveSys.stop()
+            input("Hit Return")
+        
