@@ -20,7 +20,7 @@ FEEDBACK_TABLE = {(0, 1, 0): ("STRAIGHT", None),
 		             (1, 0, 0): ("TURN", "LEFT")}
 
 # An alias for the intersection found exit condition from line follow
-INTERSECTION = 1
+SUCCESS = 1
 
 
 def alternate(driveSys, sensor):
@@ -32,16 +32,30 @@ def alternate(driveSys, sensor):
         Inputs: driveSys: a drivesystem object for robot motor control
                 sensor: A linesensor object for IR sensing
     """
-    # Maps even/odd counters to turn directions
-    dirMap = {0:"LEFT", 1: "RIGHT"}
-    turn_count = 0
+    # Maps user input to driveSys instructions
+    dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
+    # Heading of robot encoded as integer 0-7
+    heading = 0
+    # Robot location stored as (longitude, latitude)
+    location = (0, 0)
+    # Maps the robot heading to the change in location after driving
+    heading_map = {0: (0, 1), 1: (1, 1), 2: (1, 0), 3: (1, -1), 
+                    4: (0, -1), 5: (-1, -1), 6: (-1, 0), 7: (-1, 1)}
     while True:
-        if line_follow(driveSys, sensor) == INTERSECTION:
-            # Drive forward to place wheels on intersection
-            time.sleep(.2)
-            direction = dirMap[turn_count % 2]
-            exec_turn(driveSys, sensor, direction)
-            turn_count += 1
+        if line_follow(driveSys, sensor) == SUCCESS:
+            location = (location[0] + heading_map[heading][0], 
+                        location[1] + heading_map[heading][1])
+            direction = input("Direction (L/R/S)?: ")
+            while direction not in dirMap:
+                direction = input("Invalid.\
+                \ Please specify a valid direction (L/R/S): ")
+            if direction in ["L", "R"]:
+                angle = exec_turn(driveSys, sensor, dirMap[direction][0])
+                heading = (heading + dirMap[direction][0] * angle / 45)) % 8
+            else
+                driveSys.drive("STRAIGHT")
+                time.sleep(.5)
+            print(f"Location: {location}, Heading: {heading}")
 
 
 def line_follow(driveSys, sensor):
@@ -63,8 +77,11 @@ def line_follow(driveSys, sensor):
         reading = sensor.read()
         ids.update()
         if reading == (1, 1, 1) and ids.check():
+            # Drive forward to place wheels on intersection
             driveSys.drive("STRAIGHT")
-            return INTERSECTION
+            time.sleep(.2)
+            driveSys.stop()
+            return SUCCESS
         lr.update()
 	    # robot is entirely off the line
         if reading == (0, 0, 0):
@@ -90,11 +107,14 @@ def exec_turn(driveSys, sensor, direction):
     while not nrd.found_road():
         driveSys.drive("SPIN", direction) 
     # first sensor has crossed line
-    # wait for center sensor to cross line
+    # wait for center sensor to cross line for timing
     while sensor.read()[1] == 0:
         pass
     end_time = time.time()
     omega = 190
+    # Approximate angle turned using angular velocity
     angle = (omega * (end_time - start_time))
-    print("Angle: " + str(angle) + " degrees")
+    # Round the angle to the nearest 45 degrees
+    angle = round(angle / 45) * 45
+    return angle
     
