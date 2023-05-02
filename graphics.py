@@ -1,25 +1,41 @@
-import pygame
-import MapGraph
+import matplotlib.pyplot as plt
+from mapGraph import MapGraph, Intersection
 
-class GraphicsEngine:
+class Visualizer:
 
-    def __init__(self, graph):
+    def __init__(self, graph, streets):
         self.graph = graph
-        pygame.init()
-        self.window = (500, 500)
-        size(self.window(0), self.window(1))
-        self.screen = pygame.display.set_mode(size)
-        pygame.display.set_caption("Robonorm Tracker")
+        self.streets = streets
+        self.x = []
+        self.y = []
+        self.x_edges = []
+        self.y_edges = []
 
-    def graphics_show():
-        self.screen.fill(WHITE)
+    def find_intersections(self):
+        for intersection in self.graph:
+            coords = intersection.get_location()
+            self.x.append(intersection[0])
+            self.y.append(intersection[1])
+
+    def find_edges(self):
+        for street in self.streets:
+            self.x_edges.append(street[0][0], street[1][0])
+            self.y_edges.append(street[0][1], street[1][1])      
+
+    def show(self):
+        self.find_intersections()
+        self.find_edges()
+        plt.plot(self.x, self.y, 'go')
+        for i in range(len(self.x_edges)):
+            plt.plot([self.x_edges[i], self.y_edges[i])
+        plt.title("Normstorm Map")
+        plt.show()
+
+    def exit(self):
+        plt.close()
         
-        #for intersection in self.graph:
-        pygame.draw.circle(self.screen, (255, 0, 0), (200, 200), 50);   
 
-        pygame.display.flip()
-    
+if __name__ == "__main__":
 
-
-    def graphics_quit():
-        pygame.quit()
+    tool = Visualizer(graph)
+    tool.show()
