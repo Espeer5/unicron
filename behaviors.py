@@ -10,6 +10,7 @@ Date: 4/24/23
 
 from filters import Filters, InterDetector, LRDetector, NextRoadDetector
 import time
+from MapGraph import MapGraph
 
 # The feedback law governing steady state line following
 FEEDBACK_TABLE = {(0, 1, 0): ("STRAIGHT", None),
@@ -23,7 +24,7 @@ FEEDBACK_TABLE = {(0, 1, 0): ("STRAIGHT", None),
 SUCCESS = 1
 
 
-def alternate(driveSys, sensor):
+def navigate(driveSys, sensor):
     """ Assuming the robot is driving on a grid of some sort, executes 
         line following except when intersections are found, in which 
         cases the bot executes alternating left and right turns, 
@@ -41,20 +42,29 @@ def alternate(driveSys, sensor):
     # Maps the robot heading to the change in location after driving
     heading_map = {0: (0, 1), 1: (1, 1), 2: (1, 0), 3: (1, -1), 
                     4: (0, -1), 5: (-1, -1), 6: (-1, 0), 7: (-1, 1)}
+    graph = None
+    prev_loc = (0, 0)
     while True:
         if line_follow(driveSys, sensor) == SUCCESS:
+            prev_loc = location
             location = (location[0] + heading_map[heading][0], 
                         location[1] + heading_map[heading][1])
+            if graph == None:
+                graph = MapGraph(location, heading)
+            else:
+                graph.driven_connection(prev_loc, location, heading)
             direction = input("Direction (L/R/S)?: ")
-            while direction not in dirMap:
-                direction = input("Invalid.\
-                \ Please specify a valid direction (L/R/S): ")
-            if direction in ["L", "R"]:
-                angle = exec_turn(driveSys, sensor, dirMap[direction][0])
-                heading = (heading + dirMap[direction][0] * angle / 45)) % 8
-            else
-                driveSys.drive("STRAIGHT")
-                time.sleep(.5)
+            while direction.upper() != "S":
+                while direction.upper() not in dirMap:
+                    direction = input("Invalid. Please specify a \
+                                      \ valid direction (L/R/S): ")
+
+                angle = exec_turn(driveSys, sensor, dirMap[direction.upper()][0])
+                driveSys.stop()
+                heading = (heading + dirMap[direction.upper()][1] * angle / 45) % 8
+                direction = input("Direction (L/R/S)?: )")
+            driveSys.drive("STRAIGHT")
+            time.sleep(.5)
             print(f"Location: {location}, Heading: {heading}")
 
 
