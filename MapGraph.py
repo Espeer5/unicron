@@ -21,11 +21,12 @@ class Intersection:
     # Discrete set of labels available for each heading at an intersection
     CONDITIONS = ["UNKNOWN", "UNDRIVEN", "NONE", "DRIVEN"]
 
-    def __init__(self, location, curr_heading):
+    def __init__(self, location, heading=None):
         self.location = location
-        self.streets = dict.fromkeys(range(7), "UNKNOWN")
-        self.streets[(curr_heading + 4) % 8] = "DRIVEN"
-    
+        self.streets = dict.fromkeys(range(8), "UNKNOWN")
+        if heading != None:
+            self.streets[(heading + 4) % 8] = "DRIVEN"
+            
     def set_connection(self, heading, status):
         """ Set the label of a certain direction in the intersection 
             object.
@@ -35,6 +36,8 @@ class Intersection:
         """
         if status not in self.CONDITIONS:
             raise Exception("Intersection.set_connection: Invalid status")
+        else:
+            self.streets[heading] = status
 
     def get_streets(self):
         return self.streets
@@ -48,6 +51,14 @@ class Intersection:
         intersection
         """
         return self.streets[heading]
+
+    def is_explored(self):
+        """
+        Returns a boolean indicating whether an intersection is fully
+        explored, meaning it has no unknown or undriven streets
+        """
+        labels = self.streets.values()
+        return "UNKNOWN" not in labels and "UNDRIVEN" not in labels
 
 
 class MapGraph:
@@ -64,7 +75,15 @@ class MapGraph:
         return (heading + 4) % 8
 
     def __init__(self, location, heading):
-        self.graph = {Intersection(location, heading):[]}
+        origin = Intersection((0, 0))
+        point = Intersection(location, heading)
+        self.graph = {point:[origin], origin:[point]}
+
+    def get_graph(self):
+        """
+        Returns the dictionary representing the graph of the map
+        """
+        return self.graph
 
     def driven_connection(self, prev_location, location, heading):
         """
@@ -82,8 +101,10 @@ class MapGraph:
             inters = Intersection(location, heading)
             self.graph[inters] = []
         inters.set_connection(self.invert_heading(heading), "DRIVEN")
-        self.graph[inters].append(prev_inters)
-        self.graph[prev_inters].append(inters)
+        if prev_inters not in self.graph[inters]:
+            self.graph[inters].append(prev_inters)
+        if inters not in self.graph[prev_inters]:
+            self.graph[prev_inters].append(inters)
 
     def no_connection(self, location, heading):
         """
@@ -91,9 +112,36 @@ class MapGraph:
         intersection in the graph
 
         Arguments: location: the current bot location
-                    heading: the heading for which no street exists
+                   heading: the heading for which no street exists
         """
-        self.graph[curr].set_connection(heading, "NONE")
+        self.get_intersection(location).set_connection(heading, "NONE")
+
+    def markoff(self, location, angle, start_head, direction):
+        """
+        Updates the graph after the robot has completed a turn, marking those 
+        headings without streets as "NONE" and those with newly found streets
+        as undriven
+
+        Arguments: location: the current bot coordinates
+                   angle: the angle covered by the bot turn
+                   start_head: the heading the bot was facing before the turn
+                   direction: Left/right for the turn (casing/letters enforced
+                   in input code)
+        """
+        dir_map = {'L': 1, 'R':-1}
+        start_head += dir_map[direction]
+        inters = self.get_intersection(location)
+        for i in range(round(angle / 45) - 1):
+            heading = (start_head + (dir_map[direction] * i)) % 8
+            if inters.check_connection(heading) not in ["UNKNOWN", "NONE"]:
+                raise Exception("Expected intersection is missing, aborting")
+            self.no_connection(location, heading)
+        heading = (start_head + dir_map[direction] * (round(angle / 45) - 1)) % 8
+        if inters.check_connection(heading) == "NONE":
+            raise Exception("Nonexisting road found. Aborting")
+        if inters.check_connection(heading) != "DRIVEN":
+            inters.set_connection(heading, "UNDRIVEN")
+
 
     def contains(self, location):
         """
@@ -105,15 +153,29 @@ class MapGraph:
         return False
 
     def is_complete(self):
+        """
+        Returns true if all intersections in the map are fully explored, 
+        false otherwise
+        """
         for intersection in self.graph:
-            streets = intersection.get_streets()
-            for street in streets:
-                if streets[street] in ["UNKNOWN", "UNDRIVEN"]:
-                    return false
+            if not intersection.is_explored():
+                return False
         return len(self.graph) != 0 
 
     def get_intersection(self, location):
+        """
+        Given a location, extracts the corresponding intersection object 
+        from the graph
+        """
         for intersection in self.graph:
             if location == intersection.get_location():
                 return intersection
         return None
+
+    def __iter__(self):
+        """
+        Define an iterator over a MapGraph as an iterator over the dictionary
+        mapping vertices to other vertices in the graph
+        """
+        return iter(self.graph)
+    

@@ -11,7 +11,9 @@ IR_PINS = (14, 15, 18) # IR detector pins (left, middle, right)
 
 # Due to hardware imbalance the base duty cycle for the motors is 
 # offset to drive in a straight line
-L_MOTOR_SPEED = 210 # The base PWM duty cycle for the left motor
-R_MOTOR_SPEED = 230 # The base PWM duty cycle for the right motor
+# 250
+# 230
+L_MOTOR_SPEED = 185 # The base PWM duty cycle for the left motor
+R_MOTOR_SPEED = 225 # The base PWM duty cycle for the right motor
 
 PWM_FREQ = 1000 # PWM frequency for motor control

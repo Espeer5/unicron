@@ -9,7 +9,7 @@ from linesensor import LineSensor
 import pigpio
 import constants as const
 import traceback
-from behaviors import navigate
+from behaviors import navigate, auto_explore
 
 if __name__ == "__main__":
 
@@ -27,7 +27,11 @@ if __name__ == "__main__":
     IRSense = LineSensor(io, const.IR_PINS)
 
     try:
-        navigate(driveSys, IRSense)
+        demo = input("1 for manual navigation and 2 for autonomous mode: ")
+        if demo == "1":
+            navigate(driveSys, IRSense)
+        elif demo == "2":
+            auto_explore(driveSys, IRSense)
     except BaseException as ex:		
         # Report the error then continue with the normal shutdown
         print("Ending due to exception: %s" % repr(ex))

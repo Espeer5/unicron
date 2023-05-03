@@ -174,7 +174,7 @@ class NextRoadDetector:
             self.buffer += (dt / self.T) * (reading - self.buffer)
             self.last_time = time.time()
         else:
-            if self.linesensor.read()[self.sense_map["CENTER"]] == 0:
+            if self.filters.get()[self.sense_map["CENTER"]] == 0:
                 self.active = True
         
     def found_road(self):
