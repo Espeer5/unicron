@@ -47,6 +47,19 @@ LR_T = .01 #Left/Right Detector
 
 NR_T = .009 #Next Road Detector
 
+#Driving Constants
+
+# The feedback law governing steady state line following
+FEEDBACK_TABLE = {(0, 1, 0): ("STRAIGHT", None),
+                     (1, 1, 1): ("STRAIGHT", None), \
+                     (0, 1, 1): ("TURN", "RIGHT"), \
+                     (0, 0, 1): ("TURN", "RIGHT"), \
+		             (1, 1, 0): ("TURN", "LEFT"), \
+		             (1, 0, 0): ("TURN", "LEFT")}
+
+# An alias for the intersection found exit condition from line follow
+SUCCESS = 1
+
 #Mapping Constants
 
 #Relate heading to the change in position they cause

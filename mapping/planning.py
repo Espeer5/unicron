@@ -114,4 +114,21 @@ class Djikstra:
             node = self.graph.get_intersection(next_n)
         return path
 
-
+def find_unexplored(graph, curr):
+    """Uses a DFS to find a nearby intersection with unexplored headings, so 
+    that Djikstra may then compute a path to that intersection for exploration
+    
+    Arguments: graph: a MapGraph object to search over 
+               curr: the current location of the bot in the graph
+    """
+    inters = graph.get_intersection(curr)
+    if not inters.is_explored():
+        return inters.location
+    nexts = graph.neighbors(inters)
+    if len(nexts) != 0:
+        for chile in graph.neighbors(inters):
+            nxt = find_unexplored(chile)
+            if nxt != None and nxt != curr:
+                return find_unexplored(chile)
+    else:
+        return None

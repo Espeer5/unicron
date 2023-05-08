@@ -31,7 +31,7 @@ class Intersection:
         """Comparison method less than used for comparing two Intersection so 
         that they may be ordered in a PriorityQueue used to implement Djikstra's
         """
-        return -1
+        return self.cost < other.cost
             
     def set_connection(self, heading, status):
         """ Set the label of a certain direction in the intersection 
