@@ -70,6 +70,41 @@ class Visualizer:
         plt.title("Normstorm Map")
         plt.show()
 
+    def create_path(self, start, path):
+        heading_map = {0:(0, 1), 1:(1, 1), 2:(1, 0), 3:(1, -1),
+                4:(0, -1), 5:(-1, -1), 6:(-1, 0), 7:(-1, 1)}
+        pth_x = [start[0]]
+        pth_y = [start[1]]
+        pth_l_x = []
+        pth_l_y = []
+        for i in range(len(path)):
+            pth_x.append(pth_x[len(pth_x) - 1] + heading_map[path[i]][0])
+            pth_y.append(pth_y[len(pth_y) - 1] + heading_map[path[i]][1])
+            pth_l_x.append((-pth_x[i - 1], -pth_x[i]))
+            pth_l_y.append((pth_y[i - 1], pth_y[i]))
+        i = len(path)
+        pth_l_x.append((-pth_x[i - 1], -pth_x[i]))
+        pth_l_y.append((pth_y[i - 1], pth_y[i]))
+        return (pth_x, pth_y, pth_l_x, pth_l_y)
+
+    def show_path(self, start, path):
+        x, y, inter_exp = self.find_intersections()
+        x_edges, y_edges = self.find_edges()
+        for i in range(len(x_edges)):
+            plt.plot(x_edges[i], y_edges[i], 'r')
+        for i in range(len(x)):
+            if inter_exp[i]:
+                plt.plot(x[i], y[i], 'go')
+            else:
+                plt.plot(x[i], y[i], 'ko')
+        pth_x, pth_y, l_x, l_y = self.create_path(start, path)
+        for i in range(len(pth_x)):
+            plt.plot(-pth_x[i], pth_y[i], 'bo')
+        for i in range(len(l_x)):
+            plt.plot(l_x[i], l_y[i], 'b')
+        plt.title("Normstorm Map")
+        plt.show()
+
     def exit(self):
         """
         Closes out the graphics window opened by visualizer.show()

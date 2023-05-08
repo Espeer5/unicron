@@ -52,12 +52,15 @@ class Djikstra:
         self.q = NodeQueue(self.goal)
 
     def run(self):
+        invert_h_map= {(0, 1): 0, (1, 1): 1, (1, 0): 2, (1, -1):3,
+                       (0, -1):4, (-1, -1): 5, (-1, 0): 6, (-1, 1): 7}
         while not self.q.empty():
             curr = self.q.deq()[1]
-            for i in range(len(self.graph.neighbors(curr))):
+            for chile in self.graph.neighbors(curr):
+                delta = (curr.get_location()[0] - chile.get_location()[0],
+                         curr.get_location()[1] - chile.get_location()[1])
+                pot_dir = invert_h_map[delta]
                 pot_cost = curr.get_cost() + 1
-                pot_dir = self.graph.invert_heading(i)
-                chile = self.graph.neighbors(curr)[i]
                 if pot_cost < chile.get_cost():
                     if chile.get_cost() != float('inf'):
                         self.q.remove(chile)
@@ -75,7 +78,6 @@ class Djikstra:
             path.append(node.get_dir())
             next_n = (node.get_location()[0] + heading_map[node.get_dir()][0],
                     node.get_location()[1] + heading_map[node.get_dir()][1])
-            print(next_n)
             node = self.graph.get_intersection(next_n)
         return path
 
