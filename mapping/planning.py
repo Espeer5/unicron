@@ -1,6 +1,6 @@
 """
-This module contains the functions needed to perform route planning using Djikstra's 
-algorithm for the robot in ME/CS/EE 129 Spring '23
+This module contains the functions needed to perform route planning using 
+Djikstra's algorithm for the robot in ME/CS/EE 129 Spring '23
 
 Authors: Edward Speer, Garrett Knuf
 Date: 5/8/23
@@ -8,35 +8,54 @@ Date: 5/8/23
 
 from mapping.MapGraph import MapGraph, Intersection
 from queue import PriorityQueue
+from constants import heading_map, invert_h_map
 
 class NodeQueue:
-    """ A priority queue of SeachNodes which is sorted upon 
-    insertion and deletion to maintain the proper execution order 
-    of Djikstra's algorithm"""
+    """ A priority queue of Intersections which is sorted upon 
+    insertion and deletion bny cost to maintain the proper execution 
+    of Djikstra's algorithm
+    
+    Inputs: origin - the goal node for the Djikstra Instance
+    """
     
     def __init__(self, origin):
         self.Q = PriorityQueue()
         self.Q.put((0, origin))
 
     def insert(self, node):
+        """Insert an Intersection in the correct sorted order by cost
+        
+        Arguments: node - an Intersection to insert
+        """
         self.Q.put((node.get_cost(), node))
 
     def deq(self):
+        """Retrieve, remove, and return the lowest cost intersection"""
         return self.Q.get()
 
     def empty(self):
+        """Check if the NodeQueue is empty"""
         return self.Q.empty()
     
     def size(self):
+        """Return the size of the NodeQueue (number of Intersections)"""
         return self.Q.qsize()
 
     def remove(self, node):
+        """Remove a given node from the NodeQueue regardless of cost
+        
+        Arguments: node - The node to be removed from the Queue
+        """
         self.Q.remove(node)
 
 
 class Djikstra:
     """Contains all the objects needed to run Djikstra's, and 
-    the function which computes the shortest path"""
+    the function which computes the shortest path
+    
+    Inputs: graph - A MapGraph giving the layout of the Intersections/ streets 
+            origin - The goal Intersection location of Djikstra's
+    """
 
     def __init__(self, graph, origin):
         self.graph = graph
@@ -45,6 +64,11 @@ class Djikstra:
         self.q = NodeQueue(self.goal)
 
     def reset(self, origin):
+        """Reinitializes the Djikstra object over the given map to use a 
+        different goal node.
+
+        Arguements: origin - the new goal Intersection location    
+        """
         for node in self.graph:
             node.reset()
         self.goal = self.graph.get_intersection(origin)
@@ -52,8 +76,10 @@ class Djikstra:
         self.q = NodeQueue(self.goal)
 
     def run(self):
-        invert_h_map= {(0, 1): 0, (1, 1): 1, (1, 0): 2, (1, -1):3,
-                       (0, -1):4, (-1, -1): 5, (-1, 0): 6, (-1, 1): 7}
+        """ Run Djikstra's algorithm on the graph. This will assign a cost and 
+        direction to each Intersewction in the graph stored in these fields 
+        internally in each Intersection object
+        """
         while not self.q.empty():
             curr = self.q.deq()[1]
             for chile in self.graph.neighbors(curr):
@@ -69,8 +95,15 @@ class Djikstra:
                     self.q.insert(chile)
 
     def gen_path(self, start_point):
-        heading_map = {0:(0, 1), 1:(1, 1), 2:(1, 0), 3:(1, -1),
-                4:(0, -1), 5:(-1, -1), 6:(-1, 0), 7:(-1, 1)}
+        """ Generates a path from the given start point to the goal node of 
+        the Djikstra object. Runs Djikstra's, then follows the directions stored 
+        in each Intersection until the goal is reached.
+
+        Arguments: start_point - the location where the path begins in the graph
+
+        Returns: path - a list of headings to follow sequentially to reach the 
+                        goal.
+        """
         path = []
         self.run()
         node = self.graph.get_intersection(start_point)
