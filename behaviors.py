@@ -8,12 +8,15 @@ Authors: Edward Speer, Garrett Knuf
 Date: 4/24/23
 """
 
-from filters import Filters, InterDetector, LRDetector, NextRoadDetector
+# Imports
+from sensing.filters import Filters, InterDetector, LRDetector, NextRoadDetector
 import time
-from MapGraph import MapGraph
-from graphics import Visualizer
+from mapping.MapGraph import MapGraph
+from mapping.graphics import Visualizer
 import sys
 import random
+import constants as const
+import pickle
 
 # The feedback law governing steady state line following
 FEEDBACK_TABLE = {(0, 1, 0): ("STRAIGHT", None),
@@ -57,15 +60,24 @@ def navigate(driveSys, sensor):
                 tool = Visualizer(graph)
             else:
                 graph.driven_connection(prev_loc, location, heading)
+            if sensor.read() == (0, 0, 0):
+                graph.no_connection(location, heading)
+            else:
+                inter = graph.get_intersection(location)
+                if inter.check_connection(heading) != "DRIVEN":
+                    graph.get_intersection(location).set_connection(heading, "UNDRIVEN")
             if input("Show map? (y/n): ").upper() == "Y":
                 tool.show()
             direction = input("Direction (L/R/S)?: ")
             while direction.upper() != "S":
                 while direction.upper() not in dirMap:
                     direction = input("Invalid. Please specify a valid direction (L/R/S): ")
-                angle = exec_turn(driveSys, sensor, dirMap[direction.upper()][0])
+                angle = abs(exec_turn(driveSys, sensor, dirMap[direction.upper()][0]))
+                print(angle)
                 graph.markoff(location, angle, heading, direction.upper())
                 if graph.is_complete():
+                    with open("map1.pickle", 'wb') as filen:
+                        pickle.dump(graph, filen)
                     print("Map Complete")
                     sys.exit(0)
                 heading = (heading + dirMap[direction.upper()][1] * angle / 45) % 8
@@ -90,11 +102,11 @@ def line_follow(driveSys, sensor):
                         sensing
     """
     LR_DET_RESPONSE = {-1: (driveSys.drive, ["HOOK", "LEFT"]),
-                        0: (past_end, []),
+                        0: (driveSys.drive, ["STRAIGHT"]),
                         1: (driveSys.drive, ["HOOK", "RIGHT"])} 
 
-    ids = InterDetector(sensor, .03)
-    lr = LRDetector(sensor, .01)
+    ids = InterDetector(sensor, const.INTER_T)
+    lr = LRDetector(sensor, const.LR_T)
     start_time = time.time()
     while True:
         reading = sensor.read()
@@ -102,7 +114,7 @@ def line_follow(driveSys, sensor):
         if reading == (1, 1, 1) and ids.check() and (time.time() - start_time) >= .5:
             # Drive forward to place wheels on intersection
             driveSys.drive("STRAIGHT")
-            time.sleep(.35)
+            time.sleep(.37)
             driveSys.stop()
             return SUCCESS
         lr.update()
@@ -126,44 +138,44 @@ def exec_turn(driveSys, sensor, direction):
                direction: Direction of turn (l/r)
     """
     start_time = time.time()
-    nrd = NextRoadDetector(sensor, 0.015, direction)
-    while not nrd.found_road():
+    driveSys.kick(direction)
+    edgeDetector = NextRoadDetector(sensor, const.NR_T, direction)
+    while not edgeDetector.found_road():
         driveSys.drive("SPIN", direction) 
     # first sensor has crossed line
+    edge_time = time.time()
     # wait for center sensor to cross line for timing
-    while sensor.read()[1] == 0:
+    centerDetector = NextRoadDetector(sensor, 0.001, "CENTER")
+    while not centerDetector.found_road():
         pass
     driveSys.stop()
     end_time = time.time()
-    time.sleep(0.2)
-    omega = 170
-    # Approximate angle turned using angular velocity
-    angle = (omega * (end_time - start_time))
-    # adjust robot overshoot if large turn is made
-    if direction.upper() == "RIGHT":
-        delay = 0.11
-        if angle > 115:
-            delay = 0.145
-            omega = 162
-            if angle > 140:
-                omega = 171
-            if angle > 200: 
-                omega = 185
-            if angle > 280:
-                omega = 193
-        driveSys.drive("SPIN", "LEFT")
-        time.sleep(delay)
-        driveSys.stop()
-    if direction.upper() == "LEFT":
-        if angle > 250:
-            omega = 165
+    
+    #t1 = edge_time - start_time
+    tm = end_time - start_time
 
-    battery_life = 0.96
-    angle = (omega * battery_life * (end_time - start_time))
-    print(angle)
-    # Round the angle to the nearest 45 degrees
-    angle = round(angle / 45) * 45
-    return angle
+    #print(str(t1) + "," + str(tm) + "," + str(tm - t1) + "," +
+    #        str(tm / (tm - t1)))
+
+    if direction == "LEFT":
+        if tm > 1.7:
+            return 180
+        elif tm > 1.4:
+            return 135
+        elif tm > 0.85:
+            return 90
+        else:
+            return 45
+    elif direction == "RIGHT":
+        if tm > 1.65:
+            return -180
+        elif tm > 1.34:
+            return -135
+        elif tm > .8:
+            return -90
+        else:
+            return - 45
+    raise Exception("Invalid direction!")
 
 
 def auto_explore(driveSys, sensor):

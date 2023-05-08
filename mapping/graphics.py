@@ -8,7 +8,7 @@ Date: 5/2
 """
 
 import matplotlib.pyplot as plt
-from MapGraph import MapGraph, Intersection
+from mapping.MapGraph import MapGraph, Intersection
 
 class Visualizer:
     """
@@ -60,13 +60,13 @@ class Visualizer:
         """
         x, y, inter_exp = self.find_intersections()
         x_edges, y_edges = self.find_edges()
+        for i in range(len(x_edges)):
+            plt.plot(x_edges[i], y_edges[i], 'r')
         for i in range(len(x)):
             if inter_exp[i]:
                 plt.plot(x[i], y[i], 'go')
             else:
                 plt.plot(x[i], y[i], 'bo')
-        for i in range(len(x_edges)):
-            plt.plot(x_edges[i], y_edges[i])
         plt.title("Normstorm Map")
         plt.show()
 

@@ -23,9 +23,14 @@ class Intersection:
 
     def __init__(self, location, heading=None):
         self.location = location
+        self.cost = float('inf')
+        self.direction = None
         self.streets = dict.fromkeys(range(8), "UNKNOWN")
         if heading != None:
             self.streets[(heading + 4) % 8] = "DRIVEN"
+
+    def __lt__(self, other):
+        return -1
             
     def set_connection(self, heading, status):
         """ Set the label of a certain direction in the intersection 
@@ -41,6 +46,22 @@ class Intersection:
 
     def get_streets(self):
         return self.streets
+
+    def reset(self):
+        self.cost = float('inf')
+        self.direction = None
+
+    def set_cost(self, cost):
+        self.cost = cost
+
+    def get_cost(self):
+        return self.cost
+
+    def get_dir(self):
+        return self.direction
+
+    def set_dir(self, direc):
+        self.direction = direc
 
     def get_location(self):
         return self.location
@@ -171,6 +192,9 @@ class MapGraph:
             if location == intersection.get_location():
                 return intersection
         return None
+
+    def neighbors(self, inters):
+        return self.graph[inters]
 
     def __iter__(self):
         """

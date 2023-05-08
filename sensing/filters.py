@@ -8,7 +8,7 @@ Authors: Edward Speer, Garrett Knuf
 Date: 4/24/23
 """
 
-import linesensor as ls
+import sensing.linesensor as ls
 import time
 
 
@@ -183,3 +183,4 @@ class NextRoadDetector:
         """
         self.update()
         return self.buffer >= self.THRESHOLD
+    

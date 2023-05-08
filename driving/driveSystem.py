@@ -9,10 +9,13 @@ Date: 4/16/2023
 """
 
 # Imports
-from motor import Motor
+from driving.drivers.motor import Motor
 import pigpio
 import constants as const
 import time
+import sys
+
+sys.path.insert(0, '/home/robot/project')
 
 class DriveSystem():
     """ This class instantiates the left and right Motor objects and provides 
@@ -28,8 +31,13 @@ class DriveSystem():
 
     # Available drive modes and their corresponding offsets
     # Define Motor speed offsets in as fractions of normal motor speed
-    MODES = {"STRAIGHT": 0, "VEER": 1/7, "STEER": 1/4.9,
-            "TURN": 1/2, "HOOK": 1, "SPIN": 2}
+    MODES = {"STRAIGHT": {None: const.STRAIGHT_S, "LEFT": const.STRAIGHT_S,
+        "RIGHT": const.STRAIGHT_S},
+            "VEER": {"LEFT": const.L_VEER_S, "RIGHT": const.R_VEER_S},
+            "STEER": {"LEFT": const.L_STEER_S, "RIGHT": const.R_STEER_S},
+            "TURN": {"LEFT": const.L_TURN_S, "RIGHT": const.R_TURN_S},
+            "HOOK": {"LEFT": const.L_HOOK_S, "RIGHT": const.R_HOOK_S},
+            "SPIN": {"LEFT": const.L_SPIN_S, "RIGHT": const.R_SPIN_S}}
 
     def __init__(self, io, leftMPins, rightMPins, PWMFreq):
         # instantiate the left and right Motor instances
@@ -66,17 +74,18 @@ class DriveSystem():
         if(direction == None and mode != "STRAIGHT"):
             raise Exception("DriveSystem.drive: Must specify LEFT or RIGHT")
         
-        # If direction is left, slow the left motor
-        if(direction == "LEFT"):
-            self.left_motor.setSpeed(const.L_MOTOR_SPEED - (self.MODES[mode]*const.L_MOTOR_SPEED))
-            self.right_motor.setSpeed(-const.R_MOTOR_SPEED)
-
-        # If direction is right, slow the right motor
-        # This case also runs if direction is straight with offset 0
-        else:
-            self.left_motor.setSpeed(const.L_MOTOR_SPEED)
-            self.right_motor.setSpeed(-(const.R_MOTOR_SPEED - (self.MODES[mode]*const.R_MOTOR_SPEED)))
-
+        #Set the left and right motor speeds based on mode and direction
+        self.left_motor.setSpeed(self.MODES[mode][direction][0])
+        self.right_motor.setSpeed(self.MODES[mode][direction][1])
+    
+    def kick(self, direction):
+        direc = 1
+        if direction == "LEFT":
+            direc = -1
+        self.left_motor.setSpeed(direc * 255)
+        self.right_motor.setSpeed(direc * 255)
+        time.sleep(.05)
+        self.stop()
 
 def test_flower():
     print("Setting up the GPIO...")
@@ -88,11 +97,11 @@ def test_flower():
     driveSys = DriveSystem(io, const.L_MOTOR_PINS, const.R_MOTOR_PINS, \
                            const.PWM_FREQ)
     for style in driveSys.MODES:
-        if style in ["STRAIGHT", "VEER", "STEER"]:
+        if style not in ["SPIN"]:
             continue
         for direction in ["LEFT", "RIGHT"]:
+            input("Hit Return")
             driveSys.drive(style, direction)
             time.sleep(4)
             driveSys.stop()
-            input("Hit Return")
-        
+                   
