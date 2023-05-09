@@ -76,6 +76,11 @@ class Intersection:
         """Returns the location tuple associated with the Intersection"""
         return self.location
 
+    def print(self):
+        """Prints relevant information about an intersection"""
+        print("Loc: " + self.location + " Cost: " + self.cost +
+                " Dir: " + self.direction)
+
     def check_connection(self, heading):
         """
         returns the label associated with a certain heading from the
@@ -207,6 +212,8 @@ class MapGraph:
         Returns the list of adjacent Intersections for a given Intersection 
         inters in the graph
         """
+        if inters == None:
+            return []
         return self.graph[inters]
 
     def __iter__(self):

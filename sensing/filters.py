@@ -161,7 +161,10 @@ class NextRoadDetector:
         self.T = T
         self.direction = direction
         self.last_time = time.time()
-        self.buffer = 0
+        if direction == "CENTER":
+            self.buffer = 1
+        else:        
+            self.buffer = 0
         self.active = False
 
     def update(self):

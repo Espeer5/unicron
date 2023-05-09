@@ -29,23 +29,26 @@ R_STEER_S = (205, -180) #Speeds to steer right
 
 L_TURN_S = (92, -225) #Speeds to turn left
 
+
 R_TURN_S = (205, -113) #Speeds to turn right
 
-L_HOOK_S = (0, -225) #Speeds to hook left
+L_HOOK_S = (0, -215) #Speeds to hook left
 
-R_HOOK_S = (205, 0) #Speeds to hook right
+R_HOOK_S = (190, 0) #Speeds to hook right
 
-L_SPIN_S = (-165, -175) #Speeds to spin left
+#L_SPIN_S = (-165, -175) #Speeds to spin left
+L_SPIN_S = (-170, -182)
 
-R_SPIN_S = (153, 183) #Speeds to spin right
+#R_SPIN_S = (153, 183) #Speeds to spin right
+R_SPIN_S = (145, 175)
 
 #Detector Tau Values
 
-INTER_T = .03 #Intersection Detector
+INTER_T = .032 #Intersection Detector
 
-LR_T = .01 #Left/Right Detector
+LR_T = .002 #Left/Right Detector
 
-NR_T = .009 #Next Road Detector
+NR_T = .03 #Next Road Detector
 
 #Driving Constants
 

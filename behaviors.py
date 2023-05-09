@@ -159,6 +159,7 @@ def auto_djik(driveSys, sensor):
 
     while True:
         if act.line_follow(driveSys, sensor) == const.SUCCESS:
+            time.sleep(0.2)
             prev_loc = location
             location = (location[0] + const.heading_map[heading][0],
                         location[1] + const.heading_map[heading][1])
@@ -168,19 +169,49 @@ def auto_djik(driveSys, sensor):
                 djik = Djikstra(graph, (0, 0))
             else:
                 graph.driven_connection(prev_loc, location, heading)
+            if sensor.read() == (0, 0, 0):
+                graph.no_connection(location, heading)
+            else:
+                inter = graph.get_intersection(location)
+                if inter.check_connection(heading) != "DRIVEN":
+                    graph.get_intersection(location).set_connection(heading, "UNDRIVEN")
+
 
             dest = pln.find_unexplored(graph, location)
+            print(dest)
+            if dest == None:
+                act.exec_turn(driveSys, sensor, ['LEFT', 'RIGHT'][random.randrange(2)])
+                continue
             djik.reset(dest)
             pth = djik.gen_path(location)
-            while location != dest:
-                direc = act.to_head(pth[0])
-                ang = abs(act.exec_turn(driveSys, sensor, direc))
-                graph.markoff(location, ang, heading, direc)
-                heading = (heading + dirMap[direc[0]][1] * ang / 45) % 8
-                act.line_follow(driveSys, sensor)
+            next_loc = None
+            while next_loc != dest:
+                if heading != pth[0]:
+                    direc = act.to_head(heading, pth[0])
+                    if (heading + 4) % 8 == pth[0]:
+                        direc = act.l_r_unex(graph.get_intersection(location), heading)
+                    while heading != pth[0]:
+                        ang = abs(act.exec_turn(driveSys, sensor, direc))
+                        graph.markoff(location, ang, heading, direc[0])
+                        heading = (heading + dirMap[direc[0]][1] * ang / 45) % 8
+                next_loc = (location[0] + const.heading_map[heading][0], 
+                        location[1] + const.heading_map[heading][1])
+                if next_loc == dest:
+                    break
+                act.line_follow(driveSys, sensor) 
+                prev_loc = location
                 location = (location[0] + const.heading_map[heading][0],
                         location[1] + const.heading_map[heading][1])
-                pth = djik.gen_path(location)
+                graph.driven_connection(prev_loc, location, heading)
+                if sensor.read() == (0, 0, 0):
+                    graph.no_connection(location, heading)
+                else:
+                    inter = graph.get_intersection(location)
+                    if inter.check_connection(heading) != "DRIVEN":
+                        graph.get_intersection(location).set_connection(heading, "UNDRIVEN")
+                if dest != None:
+                    djik.reset(dest)
+                    pth = djik.gen_path(location)
             if graph.is_complete():
                 complete(graph, tool)
 

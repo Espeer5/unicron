@@ -19,9 +19,9 @@ def line_follow(driveSys, sensor):
                 sensor: a LineSensor object to be filtered for line
                         sensing
     """
-    LR_DET_RESPONSE = {-1: (driveSys.drive, ["HOOK", "LEFT"]),
+    LR_DET_RESPONSE = {-1: (driveSys.drive, ["TURN", "LEFT"]),
                         0: (driveSys.drive, ["STRAIGHT"]),
-                        1: (driveSys.drive, ["HOOK", "RIGHT"])}
+                        1: (driveSys.drive, ["TURN", "RIGHT"])}
     ids = InterDetector(sensor, const.INTER_T)
     lr = LRDetector(sensor, const.LR_T)
     start_time = time.time()
@@ -54,6 +54,13 @@ def to_head(heading, next_h):
     if  next_h in [(heading + i) % 8 for i in range(5)]:
         return "LEFT"
     else: 
+        return "RIGHT"
+
+def l_r_unex(inter, heading):
+    """Determines whether turning left or right is better for exploring"""
+    if const.UND in [inter.check_connection((heading + i) % 8) for i in range(5)] or const.UNK in [inter.check_connection((heading + i) % 8) for i in range(5)]:
+        return "LEFT"
+    else:
         return "RIGHT"
 
 
@@ -101,7 +108,7 @@ def exec_turn(driveSys, sensor, direction):
     # first sensor has crossed the line
 
     # wait for center sensor to cross line for timing
-    centerDetector = NextRoadDetector(sensor, 0.001, "CENTER")
+    centerDetector = NextRoadDetector(sensor, const.NR_T, "CENTER")
     while not centerDetector.found_road():
         pass
     driveSys.stop()

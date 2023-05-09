@@ -9,7 +9,7 @@ from sensing.linesensor import LineSensor
 import pigpio
 import constants as const
 import traceback
-from behaviors import auto_djik
+from behaviors import auto_djik, navigate
 import time
 
 if __name__ == "__main__":
@@ -28,7 +28,8 @@ if __name__ == "__main__":
     IRSense = LineSensor(io, const.IR_PINS)
 
     try:
-        auto_djik(driveSys, IRSense)
+        navigate(driveSys, IRSense)
+        #auto_djik(driveSys, IRSense)
     except BaseException as ex:		
         # Report the error then continue with the normal shutdown
         print("Ending due to exception: %s" % repr(ex))

@@ -121,14 +121,16 @@ def find_unexplored(graph, curr):
     Arguments: graph: a MapGraph object to search over 
                curr: the current location of the bot in the graph
     """
+    if curr == None:
+        return None
     inters = graph.get_intersection(curr)
-    if not inters.is_explored():
-        return inters.location
     nexts = graph.neighbors(inters)
     if len(nexts) != 0:
         for chile in graph.neighbors(inters):
-            nxt = find_unexplored(chile)
+            if not chile.is_explored():
+                return chile.location
+            nxt = find_unexplored(graph, chile)
             if nxt != None and nxt != curr:
-                return find_unexplored(chile)
+                return nxt
     else:
         return None
