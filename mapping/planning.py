@@ -6,9 +6,11 @@ Authors: Edward Speer, Garrett Knuf
 Date: 5/8/23
 """
 
-from mapping.MapGraph import MapGraph, Intersection
+from mapping.MapGraph import MapGraph
 from queue import PriorityQueue
-from constants import heading_map, invert_h_map
+from constants import heading_map, invert_h_map, UND, UNK
+from graphics import Visualizer
+import pickle
 
 class NodeQueue:
     """ A priority queue of Intersections which is sorted upon 
@@ -137,3 +139,36 @@ def find_unexplored(graph, curr):
                 return nxt
     else:
         return None
+    
+
+def from_pickle():
+    """Returns the graph giving the map of a previously explored tape map
+    from the stored pickle file of the graph
+    """
+    map_num = input("Which map are you NormStorming on? (Number): ")
+    filename = f'../map{map_num}.pickle'
+    print(f'Loading the map from {filename}.')
+    try:
+        with open(filename, 'rb') as pick:
+            toRet = pickle.load(pick)
+    except FileNotFoundError:
+        print("No such map file found! Aborting")
+    return toRet
+
+
+def init_plan(location, heading):
+    """Initializes the variables needed for route planning by a behavior
+    
+    Arguments: location - the current robot location
+               heading - the current robot heading
+    """
+    graph = MapGraph(location, heading)
+    return (graph, Visualizer(graph), Djikstra(graph, (0, 0)))
+
+
+def unx_dir(inter):
+    """Returns a heading which needs to be explored for a given intersection"""
+    for i in range(len(inter.get_streets())):
+        if inter.check_connection(i) in [UNK, UND]:
+            return i
+    return None

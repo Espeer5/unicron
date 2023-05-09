@@ -60,6 +60,9 @@ FEEDBACK_TABLE = {(0, 1, 0): ("STRAIGHT", None),
 		             (1, 1, 0): ("TURN", "LEFT"), \
 		             (1, 0, 0): ("TURN", "LEFT")}
 
+#Map directions from user input to string and integer directions
+dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
+
 # An alias for the intersection found exit condition from line follow
 SUCCESS = 1
 

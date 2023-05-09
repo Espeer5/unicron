@@ -121,6 +121,61 @@ def exec_turn(driveSys, sensor, direction):
     tm = end_time - start_time
     return calculate_angle(direction, tm)
 
+def explore_turn(driveSys, sensor, direction, graph, location, heading):
+    ang = abs(exec_turn(driveSys, sensor, direction))
+    graph.markoff(location, ang, heading, direction[0])
+    heading = (heading + const.dirMap[direction[0]][1] * ang / 45) % 8
+    time.sleep(.2)
+    return heading
+
+def path_follow(driveSys, sensor, path, location, heading):
+    for i in range(len(path)):
+        # orient robot to optimal heading
+        direction = to_head(heading, path[i])
+        while heading != path[i]:
+            angle = abs(exec_turn(driveSys, sensor, direction))
+            heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
+        time.sleep(0.2)
+        # drive to next intersection
+        line_follow(driveSys, sensor)
+        location = (location[0] + const.heading_map[heading][0],
+                    location[1] + const.heading_map[heading][1])
+        time.sleep(0.2)
+    return (location, heading)
+
+def check_end(sensor, graph, location, heading):
+    if sensor.read() == (0, 0, 0):
+        if graph.get_intersection(location).check_connection(heading) not in [const.UND, const.NNE]:
+            raise Exception("Expected road missing! Aborting")
+        graph.no_connection(location, heading)
+    else:
+        inter = graph.get_intersection(location)
+        if inter.check_connection(heading) == const.NNE:
+            raise Exception("Road detected where none exists!")
+        if inter.check_connection(heading) != const.DRV:
+            graph.get_intersection(location).set_connection(heading, const.UND)
+
+def path_explore(driveSys, sensor, path, graph, location, heading):
+    prev_loc = None
+    for i in range(len(path)):
+        # orient robot to optimal heading
+        direction = to_head(heading, path[i])
+        if (heading + 4) % 8 == path[0]:
+            direction = l_r_unex(graph.get_intersection(location), heading)
+        while heading != path[i]:
+            heading = explore_turn(driveSys, sensor, direction, graph, location, heading)
+        # drive to next intersection if it is not the dest
+        if i != len(path) - 1:
+            line_follow(driveSys, sensor)
+            prev_loc = location
+            location = (location[0] + const.heading_map[heading][0],
+                        location[1] + const.heading_map[heading][1])
+            graph.driven_connection(prev_loc, location, heading)
+            check_end(sensor, graph, location, heading)
+        time.sleep(0.2)
+    return (location, heading)
+
+
 
 def past_end():
     """
