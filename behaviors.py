@@ -66,8 +66,8 @@ def navigate(driveSys, sensor):
                 inter = graph.get_intersection(location)
                 if inter.check_connection(heading) != "DRIVEN":
                     graph.get_intersection(location).set_connection(heading, "UNDRIVEN")
-            if input("Show map? (y/n): ").upper() == "Y":
-                tool.show()
+            #if input("Show map? (y/n): ").upper() == "Y":
+            #    tool.show()
             direction = input("Direction (L/R/S)?: ")
             while direction.upper() != "S":
                 while direction.upper() not in dirMap:
@@ -79,7 +79,6 @@ def navigate(driveSys, sensor):
                     complete(graph, tool)
                 heading = (heading + dirMap[direction.upper()][1] * angle / 45) % 8
                 direction = input("Direction (L/R/S)?: ")
-
 
 def auto_explore(driveSys, sensor):
     """
@@ -144,6 +143,53 @@ def auto_explore(driveSys, sensor):
                     heading = (heading + (-angle / 45)) % 8
                     time.sleep(0.2)
 
+
+def manual_djik(driveSys, sensor, location):
+    """Use Djikstra's algorithm to find the shortest path to a specified
+    location in a predetermined map and then follows the path
+    """
+    # Initial conditions (robot needs to be set at origin)
+    heading = 0
+    location = (0, 0)
+    prev_loc = (0, 0)
+
+    dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
+
+    # load the map from file
+    filename = "map1.pickle"
+    print("Loading the map from %s..." % filename)
+    with open(filename, 'rb') as file:
+        graph = pickle.load(file)
+        tool = Visualizer(graph)
+        djik = Djikstra(graph, (0, 0))
+
+        while True:
+            # get next location to drive to
+            cmd = input("Enter coordinates to drive to: ")
+            dest = (cmd.split(",")[0], cmd.split(",")[1])
+            print("Driving to (" + dest[0] + ", " + dest[1] + ")...")
+
+            # run algorithm and determine best path to travel
+            djik.reset(dest)
+            path = djik.gen_path(location)
+            print("Path: " + str(path))
+
+            # follow the path
+            for i in range(len(path)):
+                # orient robot to optimal heading
+                direction = act.to_head(heading, path[i])
+                while heading != path[i]:
+                    angle = abs(act.exec_turn(driveSys, sensor, direction))
+                    heading = (heading + dirMap[direction[0]][1] * angle / 45) % 8
+                time.sleep(0.2)
+                # drive to next intersection
+                act.line_follow(driveSys, sensor)
+                location = (location[0] + const.heading_map[heading][0],
+                            location[1] + const.heading_map[heading][1])
+                time.sleep(0.2)
+            print("Robot has successfully reached " + str(dest))   
+
+        
 def auto_djik(driveSys, sensor):
     """Uses Djikstra's algorithm to intelligently explore the map by taking
     efficient paths to unexplored locations

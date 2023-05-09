@@ -9,7 +9,7 @@ from sensing.linesensor import LineSensor
 import pigpio
 import constants as const
 import traceback
-from behaviors import auto_djik, navigate
+from behaviors import auto_djik, manual_djik, navigate
 import time
 
 if __name__ == "__main__":
@@ -28,8 +28,17 @@ if __name__ == "__main__":
     IRSense = LineSensor(io, const.IR_PINS)
 
     try:
-        navigate(driveSys, IRSense)
-        #auto_djik(driveSys, IRSense)
+        cmd = input("1: Explore the map manually\n" + 
+                    "2: Navigate a map using Djikstra's\n" +
+                    "3: Auto-explore the map\n")
+        if cmd == "1":
+            navigate(driveSys, IRSense)
+        elif cmd == "2":
+            manual_djik(driveSys, IRSense)
+        elif cmd == "3":
+            auto_djik(driveSys, IRSense)
+        else:
+            print("Invalid command, exiting...")
     except BaseException as ex:		
         # Report the error then continue with the normal shutdown
         print("Ending due to exception: %s" % repr(ex))
