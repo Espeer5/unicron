@@ -71,7 +71,10 @@ class Djikstra:
         """
         for node in self.graph:
             node.reset()
+        print(origin)
         self.goal = self.graph.get_intersection(origin)
+        print(self.goal)
+        print(origin == (1,1))
         self.goal.set_cost(0)
         self.q = NodeQueue(self.goal)
 

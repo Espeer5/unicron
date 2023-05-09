@@ -120,6 +120,10 @@ class MapGraph:
         """
         return self.graph
 
+    def print_graph(self):
+        for intersection in self.graph:
+            print(intersection.get_location())
+
     def driven_connection(self, prev_location, location, heading):
         """
         Sets the streets for each intersection when a connection 

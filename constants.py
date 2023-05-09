@@ -37,10 +37,10 @@ L_HOOK_S = (0, -215) #Speeds to hook left
 R_HOOK_S = (190, 0) #Speeds to hook right
 
 #L_SPIN_S = (-165, -175) #Speeds to spin left
-L_SPIN_S = (-170, -182)
+L_SPIN_S = (-180, -190)
 
 #R_SPIN_S = (153, 183) #Speeds to spin right
-R_SPIN_S = (145, 175)
+R_SPIN_S = (150, 180)
 
 #Detector Tau Values
 
@@ -48,7 +48,7 @@ INTER_T = .032 #Intersection Detector
 
 LR_T = .002 #Left/Right Detector
 
-NR_T = .03 #Next Road Detector
+NR_T = .025 #Next Road Detector
 
 #Driving Constants
 

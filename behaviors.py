@@ -66,8 +66,8 @@ def navigate(driveSys, sensor):
                 inter = graph.get_intersection(location)
                 if inter.check_connection(heading) != "DRIVEN":
                     graph.get_intersection(location).set_connection(heading, "UNDRIVEN")
-            #if input("Show map? (y/n): ").upper() == "Y":
-            #    tool.show()
+            if input("Show map? (y/n): ").upper() == "Y":
+                tool.show()
             direction = input("Direction (L/R/S)?: ")
             while direction.upper() != "S":
                 while direction.upper() not in dirMap:
@@ -144,7 +144,7 @@ def auto_explore(driveSys, sensor):
                     time.sleep(0.2)
 
 
-def manual_djik(driveSys, sensor, location):
+def manual_djik(driveSys, sensor):
     """Use Djikstra's algorithm to find the shortest path to a specified
     location in a predetermined map and then follows the path
     """
@@ -162,12 +162,21 @@ def manual_djik(driveSys, sensor, location):
         graph = pickle.load(file)
         tool = Visualizer(graph)
         djik = Djikstra(graph, (0, 0))
+        tool.show()
+        graph.print_graph()
+        
+        act.line_follow(driveSys, sensor)
+        location = (location[0] + const.heading_map[heading][0],
+                    location[1] + const.heading_map[heading][1])
 
         while True:
             # get next location to drive to
             cmd = input("Enter coordinates to drive to: ")
-            dest = (cmd.split(",")[0], cmd.split(",")[1])
-            print("Driving to (" + dest[0] + ", " + dest[1] + ")...")
+            dest = (-int(cmd.split(",")[0]), int(cmd.split(",")[1]))
+            if not graph.contains(dest):
+                print("Location does not exist!")
+                continue
+            print("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...")
 
             # run algorithm and determine best path to travel
             djik.reset(dest)
@@ -187,6 +196,7 @@ def manual_djik(driveSys, sensor, location):
                 location = (location[0] + const.heading_map[heading][0],
                             location[1] + const.heading_map[heading][1])
                 time.sleep(0.2)
+
             print("Robot has successfully reached " + str(dest))   
 
         

@@ -31,7 +31,7 @@ def line_follow(driveSys, sensor):
         if reading == (1, 1, 1) and ids.check() and (time.time() - start_time) >= .5:
             # Drive forward to place wheels on intersection
             driveSys.drive("STRAIGHT")
-            time.sleep(.37)
+            time.sleep(.35)
             driveSys.stop()
             return const.SUCCESS
         lr.update()
@@ -67,21 +67,24 @@ def l_r_unex(inter, heading):
 def calculate_angle(direction, tm):
     """Calculates the approximate angle turned by the robot for turning 
     in the given direction for the given amount of time"""
+    battery_life = 1
+    val = tm * battery_life
+    print(val)
     if direction == "LEFT":
-        if tm > 1.7:
+        if val > 1.35:
             return 180
-        elif tm > 1.4:
+        elif val > 1:
             return 135
-        elif tm > 0.85:
+        elif val > 0.65:
             return 90
         else:
             return 45
     elif direction == "RIGHT":
-        if tm > 1.65:
+        if val > 1.35:
             return -180
-        elif tm > 1.34:
+        elif val > 1.05:
             return -135
-        elif tm > .8:
+        elif val > .65:
             return -90
         else:
             return - 45
