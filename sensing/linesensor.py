@@ -5,7 +5,7 @@
     Authors: Edward Speer, Garrett Knuf
     Date: 4/16/2023 """
     
-from ir import IR
+from sensing.drivers.ir import IR
 
 class LineSensor():
 	

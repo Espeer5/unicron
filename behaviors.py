@@ -8,23 +8,29 @@ Authors: Edward Speer, Garrett Knuf
 Date: 4/24/23
 """
 
-from filters import Filters, InterDetector, LRDetector, NextRoadDetector
+# Imports
 import time
-from MapGraph import MapGraph
-from graphics import Visualizer
+from mapping.MapGraph import MapGraph
+from mapping.graphics import Visualizer
 import sys
 import random
+import constants as const
+import driving.actions as act
+import pickle
+from mapping.planning import Djikstra
+import mapping.planning as pln
 
-# The feedback law governing steady state line following
-FEEDBACK_TABLE = {(0, 1, 0): ("STRAIGHT", None),
-                     (1, 1, 1): ("STRAIGHT", None), \
-                     (0, 1, 1): ("TURN", "RIGHT"), \
-                     (0, 0, 1): ("TURN", "RIGHT"), \
-		             (1, 1, 0): ("TURN", "LEFT"), \
-		             (1, 0, 0): ("TURN", "LEFT")}
+def complete(graph, viz):
+    """If the passed in graph has been fully emplored, saves the map to a 
+    pickle file specified by the user, informs user the map is complete, and 
+    exits."""
+    filename = input("Enter a file name to save map to: ")
+    with open(filename, 'wb') as filen:
+        pickle.dump(graph, filen)
+    print("Map Complete")
+    viz.show()
+    sys.exit(0)
 
-# An alias for the intersection found exit condition from line follow
-SUCCESS = 1
 
 def navigate(driveSys, sensor):
     """ Assuming the robot is driving on a grid of some sort, executes 
@@ -41,130 +47,38 @@ def navigate(driveSys, sensor):
     heading = 0
     # Robot location stored as (longitude, latitude)
     location = (0, 0)
-    # Maps the robot heading to the change in location after driving
-    heading_map = {0: (0, 1), 1: (1, 1), 2: (1, 0), 3: (1, -1), 
-                    4: (0, -1), 5: (-1, -1), 6: (-1, 0), 7: (-1, 1)}
     graph = None
     prev_loc = (0, 0)
     tool = None
     while True:
-        if line_follow(driveSys, sensor) == SUCCESS:
+        if act.line_follow(driveSys, sensor) == const.SUCCESS:
             prev_loc = location
-            location = (location[0] + heading_map[heading][0], 
-                        location[1] + heading_map[heading][1])
+            location = (location[0] + const.heading_map[heading][0], 
+                        location[1] + const.heading_map[heading][1])
             if graph == None:
                 graph = MapGraph(location, heading)
                 tool = Visualizer(graph)
             else:
                 graph.driven_connection(prev_loc, location, heading)
+            if sensor.read() == (0, 0, 0):
+                graph.no_connection(location, heading)
+            else:
+                inter = graph.get_intersection(location)
+                if inter.check_connection(heading) != "DRIVEN":
+                    graph.get_intersection(location).set_connection(heading, "UNDRIVEN")
             if input("Show map? (y/n): ").upper() == "Y":
                 tool.show()
             direction = input("Direction (L/R/S)?: ")
             while direction.upper() != "S":
                 while direction.upper() not in dirMap:
                     direction = input("Invalid. Please specify a valid direction (L/R/S): ")
-                angle = exec_turn(driveSys, sensor, dirMap[direction.upper()][0])
+                angle = abs(act.exec_turn(driveSys, sensor, dirMap[direction.upper()][0]))
+                print(angle)
                 graph.markoff(location, angle, heading, direction.upper())
                 if graph.is_complete():
-                    print("Map Complete")
-                    sys.exit(0)
+                    complete(graph, tool)
                 heading = (heading + dirMap[direction.upper()][1] * angle / 45) % 8
                 direction = input("Direction (L/R/S)?: ")
-
-def past_end():
-    """
-    A function which can be used as a function pointer which simply raises an 
-    exception in the case where the robot attempts to drive straight where there
-    is no road.
-    """
-    raise Exception("Attempted to drive straight where there is no road")
-
-
-def line_follow(driveSys, sensor):
-    """ This behavior of the robot causes the bot to begin following a 
-        tape line on the ground, filtering the signal to avoid noise 
-        as necessary.
-
-        Inputs: driveSys: a DriveSystem object for motor control
-                sensor: a LineSensor object to be filtered for line
-                        sensing
-    """
-    LR_DET_RESPONSE = {-1: (driveSys.drive, ["HOOK", "LEFT"]),
-                        0: (past_end, []),
-                        1: (driveSys.drive, ["HOOK", "RIGHT"])} 
-
-    ids = InterDetector(sensor, .03)
-    lr = LRDetector(sensor, .01)
-    start_time = time.time()
-    while True:
-        reading = sensor.read()
-        ids.update()
-        if reading == (1, 1, 1) and ids.check() and (time.time() - start_time) >= .5:
-            # Drive forward to place wheels on intersection
-            driveSys.drive("STRAIGHT")
-            time.sleep(.35)
-            driveSys.stop()
-            return SUCCESS
-        lr.update()
-	    # robot is entirely off the line
-        if reading == (0, 0, 0):
-            lr_rd = lr.get()
-            resp = LR_DET_RESPONSE[lr_rd]
-            resp[0](*resp[1])
-        elif reading in FEEDBACK_TABLE: 
-            driveSys.drive(FEEDBACK_TABLE.get(reading)[0], \
-	        FEEDBACK_TABLE.get(reading)[1])
-    
-
-def exec_turn(driveSys, sensor, direction):
-    """Executes a turn of the robot until the next line is found
-       using a nextroad detector, and reports the approximate angle
-       the bot has turned
-
-       Inputs: driveSys: drive system object for motor control
-               sensor: linesensor object for IR input
-               direction: Direction of turn (l/r)
-    """
-    start_time = time.time()
-    nrd = NextRoadDetector(sensor, 0.015, direction)
-    while not nrd.found_road():
-        driveSys.drive("SPIN", direction) 
-    # first sensor has crossed line
-    # wait for center sensor to cross line for timing
-    while sensor.read()[1] == 0:
-        pass
-    driveSys.stop()
-    end_time = time.time()
-    time.sleep(0.2)
-    omega = 170
-    # Approximate angle turned using angular velocity
-    angle = (omega * (end_time - start_time))
-    # adjust robot overshoot if large turn is made
-    if direction.upper() == "RIGHT":
-        delay = 0.11
-        if angle > 115:
-            delay = 0.145
-            omega = 162
-            if angle > 140:
-                omega = 171
-            if angle > 200: 
-                omega = 185
-            if angle > 280:
-                omega = 193
-        driveSys.drive("SPIN", "LEFT")
-        time.sleep(delay)
-        driveSys.stop()
-    if direction.upper() == "LEFT":
-        if angle > 250:
-            omega = 165
-
-    battery_life = 0.96
-    angle = (omega * battery_life * (end_time - start_time))
-    print(angle)
-    # Round the angle to the nearest 45 degrees
-    angle = round(angle / 45) * 45
-    return angle
-
 
 def auto_explore(driveSys, sensor):
     """
@@ -180,9 +94,6 @@ def auto_explore(driveSys, sensor):
     # Robot location stored as (longitude, latitude)
     location = (0, 0)
     prev_loc = (0, 0)
-    # Maps the robot heading to the change in location after driving
-    heading_map = {0: (0, 1), 1: (1, 1), 2: (1, 0), 3: (1, -1),
-                   4: (0, -1), 5: (-1, -1), 6: (-1, 0), 7: (-1, 1)}
 
     graph = None
     tool = None
@@ -190,10 +101,10 @@ def auto_explore(driveSys, sensor):
     while True:
         # follow line until intersection is found
         # add intersection to map
-        if line_follow(driveSys, sensor) == SUCCESS:
+        if act.line_follow(driveSys, sensor) == const.SUCCESS:
             prev_loc = location
-            location = (location[0] + heading_map[heading][0],
-                        location[1] + heading_map[heading][1])
+            location = (location[0] + const.heading_map[heading][0],
+                        location[1] + const.heading_map[heading][1])
             if graph == None:
                 graph = MapGraph(location, heading)
                 tool = Visualizer(graph)
@@ -202,34 +113,133 @@ def auto_explore(driveSys, sensor):
             # explore intersection and determine shape
             intersection = graph.get_intersection(location)
             time.sleep(0.2)
-            while "UNKNOWN" in intersection.get_streets().values():
-                angle = exec_turn(driveSys, sensor, "RIGHT")
+            while const.UNK in intersection.get_streets().values():
+                angle = act.exec_turn(driveSys, sensor, "RIGHT")
                 graph.markoff(location, angle, heading, "R")
                 heading = (heading + (-angle / 45)) % 8
                 time.sleep(0.2)
 
             if graph.is_complete():
-                print("Map Complete")
-                tool.show()
-                sys.exit(0)
+                complete(graph)
 
             # turn to undriven road if it exists
-            if "UNDRIVEN" in intersection.get_streets().values():
-                while intersection.get_streets()[heading] != "UNDRIVEN":
-                    angle = exec_turn(driveSys, sensor, "RIGHT")
+            if const.UND in intersection.get_streets().values():
+                while intersection.get_streets()[heading] != const.UND:
+                    angle = act.exec_turn(driveSys, sensor, "RIGHT")
                     graph.markoff(location, angle, heading, "R")
                     heading = (heading + (-angle / 45)) % 8
                     time.sleep(0.2)
             else:
                 num_roads = 0
                 for label in intersection.get_streets().values():
-                    if label == "DRIVEN":
+                    if label == const.DRV:
                         num_roads += 1
                 num_turns = 1
                 if num_roads != 1:
                     num_turns = random.randrange(1, num_roads + 1)
                 for i in range(num_turns):
-                    angle = exec_turn(driveSys, sensor, "RIGHT")
+                    angle = act.exec_turn(driveSys, sensor, "RIGHT")
                     graph.markoff(location, angle, heading, "R")
                     heading = (heading + (-angle / 45)) % 8
                     time.sleep(0.2)
+
+
+def manual_djik(driveSys, sensor):
+    """Use Djikstra's algorithm to find the shortest path to a specified
+    location in a predetermined map and then follows the path
+    """
+    # Initial conditions (robot needs to be set at origin)
+    heading = 0
+    location = (0, 0)
+
+    # load the map from file
+    graph = pln.from_pickle()
+    tool = Visualizer(graph)
+    djik = Djikstra(graph, (0, 0))
+    tool.show()
+    graph.print_graph()
+    
+    # Drive forward to orient the bot within the map
+    act.line_follow(driveSys, sensor)
+    location = (location[0] + const.heading_map[heading][0],
+                location[1] + const.heading_map[heading][1])
+
+    # Navigate to user requested locations until aborted
+    while True:
+        # get next location to drive to
+        cmd = input("Enter coordinates to drive to: ")
+        dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
+        if not graph.contains(dest):
+            print("Location does not exist!")
+            continue
+        print("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...")
+
+        # run algorithm and determine best path to travel
+        djik.reset(dest)
+        path = djik.gen_path(location)
+        print("Path: " + str(path))
+
+        # follow the path
+        location, heading = act.path_follow(driveSys, sensor, path, location, heading, graph)
+
+        print("Robot has successfully reached " + str(dest))   
+
+        
+def auto_djik(driveSys, sensor):
+    """Uses Djikstra's algorithm to intelligently explore the map by taking
+    efficient paths to unexplored locations
+    """
+
+    heading = 0
+    location = (0, 0)
+    prev_loc = (0, 0)
+    graph = None
+    djik = None
+
+    dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
+
+    while True:
+        print(["LET ME COOK", "IM COOKIN", "I BE SHAKIN BAKIN", "YAH-YAHHH"][random.randrange(4)])
+        if act.line_follow(driveSys, sensor) == const.SUCCESS:
+            time.sleep(0.2)
+            prev_loc = location
+            location = (location[0] + const.heading_map[heading][0],
+                        location[1] + const.heading_map[heading][1])
+            if graph == None:
+                graph, tool, djik = pln.init_plan(location, heading)
+            else:
+                graph.driven_connection(prev_loc, location, heading)
+            act.check_end(sensor, graph, location, heading)
+            l_heads = [(heading + i) % 8 for i in range(4)]
+            r_heads = [(heading - i) % 8 for i in range(4)]
+            directi = None
+            if const.UNK in [graph.get_intersection(location).check_connection(head) for head in l_heads]:
+                directi = "LEFT"
+            elif const.UNK in [graph.get_intersection(location).check_connection(head) for head in r_heads]:
+                directi = "RIGHT"
+            if directi != None:
+                orig_heading = heading
+                while heading != (orig_heading + 4) % 8:
+                    heading = act.explore_turn(driveSys, sensor, directi, graph, location, heading)
+                continue
+            p_head = pln.unx_dir(graph.get_intersection(location))
+            if p_head != None:
+                if p_head == 0:
+                    continue
+                heading = act.explore_turn(driveSys, sensor, act.to_head(heading, p_head, graph, location), graph, location, heading)
+                continue
+
+            if graph.is_complete():
+                complete(graph, tool)
+            
+            dest = pln.find_unexplored(graph, location)
+            if dest == None:
+                direc = pln.unx_dir(graph.get_intersection(location))
+                if direc == None:
+                    direc = heading
+                heading = act.explore_turn(driveSys, sensor, act.to_head(heading, direc, graph, location), graph, location, heading)
+                continue
+            djik.reset(dest)
+            pth = djik.gen_path(location)
+            location, heading = act.path_explore(driveSys, sensor, pth, graph, location, heading)
+

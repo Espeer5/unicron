@@ -8,7 +8,7 @@ Authors: Edward Speer, Garrett Knuf
 Date: 4/24/23
 """
 
-import linesensor as ls
+import sensing.linesensor as ls
 import time
 
 
@@ -161,8 +161,11 @@ class NextRoadDetector:
         self.T = T
         self.direction = direction
         self.last_time = time.time()
-        self.buffer = 0
         self.active = False
+        if direction == "CENTER":
+            self.buffer = 1
+        else:        
+            self.buffer = 0
 
     def update(self):
         """ Applies the filtering algorithm to each reading to screen out 
@@ -183,3 +186,4 @@ class NextRoadDetector:
         """
         self.update()
         return self.buffer >= self.THRESHOLD
+    
