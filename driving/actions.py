@@ -124,6 +124,10 @@ def exec_turn(driveSys, sensor, direction):
     return calculate_angle(direction, tm)
 
 def explore_turn(driveSys, sensor, direction, graph, location, heading):
+    """Executes a turn around an intersection by the robot while updating the 
+    intersection graph with the observed streets and ensuring self consistency 
+    of the graph.
+    """
     ang = abs(exec_turn(driveSys, sensor, direction))
     time.sleep(.2)
     graph.markoff(location, ang, heading, direction[0])
@@ -131,6 +135,10 @@ def explore_turn(driveSys, sensor, direction, graph, location, heading):
     return heading
 
 def path_follow(driveSys, sensor, path, location, heading, graph):
+    """Causes the robot to follow the path generated from a Djikstra instance to a 
+    certain location, by turning to the approriate heading and following the 
+    strees located at that heading from each intersection until the bot is facing the target.
+    """
     for i in range(len(path)):
         # orient robot to optimal heading
         direction = to_head(heading, path[i], graph, location)
@@ -146,6 +154,10 @@ def path_follow(driveSys, sensor, path, location, heading, graph):
     return (location, heading)
 
 def check_end(sensor, graph, location, heading):
+    """ Checks the street exploration status of the road at the far end of an intersection when the
+    robot arrives at an intersection, check for consistency, and updates the intersection state 
+    in the graph.
+    """
     if sensor.read() == (0, 0, 0):
         if graph.get_intersection(location).check_connection(heading) not in [const.UNK, const.NNE]:
             raise Exception("Expected road missing! Aborting")
@@ -158,6 +170,9 @@ def check_end(sensor, graph, location, heading):
             graph.get_intersection(location).set_connection(heading, const.UND)
 
 def path_explore(driveSys, sensor, path, graph, location, heading):
+    """Follows a path to a target location produced by a Djikstra instance while also updating
+    the MapGraph with all information observed along the way.
+    """
     prev_loc = None
     for i in range(len(path)):
         # orient robot to optimal heading
