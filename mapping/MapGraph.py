@@ -121,6 +121,9 @@ class MapGraph:
         return self.graph
 
     def print_graph(self):
+        """Prints a list of all the intersections in the graph to the terminal 
+        in order to make the available locations apparent to the user.
+        """
         for intersection in self.graph:
             print(intersection.get_location())
 

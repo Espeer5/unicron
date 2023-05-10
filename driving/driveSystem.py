@@ -79,6 +79,11 @@ class DriveSystem():
         self.right_motor.setSpeed(self.MODES[mode][direction][1])
     
     def kick(self, direction):
+        """Executes a very short timed full power spin in the specified direction in order 
+        to gain a small amount of momentum and overcome static friction in initiating a turn. 
+        This enables the turning of the bot to be slightly more consisten and therefore allows 
+        angle measurement to be slightly more accurate.
+        """
         direc = 1
         if direction == "LEFT":
             direc = -1
@@ -88,6 +93,8 @@ class DriveSystem():
         self.stop()
 
 def test_flower():
+    """Execute a test pattern demonstrating all of the movements of the DriveSystem
+    """
     print("Setting up the GPIO...")
     io = pigpio.pi()
     if not io.connected:
