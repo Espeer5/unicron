@@ -84,7 +84,7 @@ class DriveSystem():
             direc = -1
         self.left_motor.setSpeed(direc * 255)
         self.right_motor.setSpeed(direc * 255)
-        time.sleep(.05)
+        time.sleep(.07)
         self.stop()
 
 def test_flower():

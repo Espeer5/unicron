@@ -9,7 +9,7 @@ Date: 5/8/23
 from mapping.MapGraph import MapGraph
 from queue import PriorityQueue
 from constants import heading_map, invert_h_map, UND, UNK
-from graphics import Visualizer
+from mapping.graphics import Visualizer
 import pickle
 
 class NodeQueue:
@@ -73,10 +73,7 @@ class Djikstra:
         """
         for node in self.graph:
             node.reset()
-        print(origin)
         self.goal = self.graph.get_intersection(origin)
-        print(self.goal)
-        print(origin == (1,1))
         self.goal.set_cost(0)
         self.q = NodeQueue(self.goal)
 
@@ -146,8 +143,9 @@ def from_pickle():
     from the stored pickle file of the graph
     """
     map_num = input("Which map are you NormStorming on? (Number): ")
-    filename = f'../map{map_num}.pickle'
+    filename = f'map{map_num}.pickle'
     print(f'Loading the map from {filename}.')
+    toRet = None
     try:
         with open(filename, 'rb') as pick:
             toRet = pickle.load(pick)
@@ -169,6 +167,6 @@ def init_plan(location, heading):
 def unx_dir(inter):
     """Returns a heading which needs to be explored for a given intersection"""
     for i in range(len(inter.get_streets())):
-        if inter.check_connection(i) in [UNK, UND]:
+        if inter.check_connection(i) == UND:
             return i
     return None

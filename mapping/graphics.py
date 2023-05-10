@@ -32,7 +32,7 @@ class Visualizer:
         intersection_explored = []
         for intersection in self.graph:
             coords = intersection.get_location()
-            x.append(-coords[0])
+            x.append(coords[0])
             y.append(coords[1])
             intersection_explored.append(intersection.is_explored())
         return (x, y, intersection_explored)
@@ -48,7 +48,7 @@ class Visualizer:
             start = intersection.get_location()
             for conn in self.graph.get_graph()[intersection]:
                 conn_loc = conn.get_location()
-                x_edges.append([-start[0], -conn_loc[0]])
+                x_edges.append([start[0], conn_loc[0]])
                 y_edges.append([start[1], conn_loc[1]])
         return (x_edges, y_edges)
 
@@ -85,10 +85,10 @@ class Visualizer:
         for i in range(len(path)):
             pth_x.append(pth_x[len(pth_x) - 1] + heading_map[path[i]][0])
             pth_y.append(pth_y[len(pth_y) - 1] + heading_map[path[i]][1])
-            pth_l_x.append((-pth_x[i - 1], -pth_x[i]))
+            pth_l_x.append((pth_x[i - 1], pth_x[i]))
             pth_l_y.append((pth_y[i - 1], pth_y[i]))
         i = len(path)
-        pth_l_x.append((-pth_x[i - 1], -pth_x[i]))
+        pth_l_x.append((pth_x[i - 1], pth_x[i]))
         pth_l_y.append((pth_y[i - 1], pth_y[i]))
         return (pth_x, pth_y, pth_l_x, pth_l_y)
 
@@ -110,7 +110,7 @@ class Visualizer:
                 plt.plot(x[i], y[i], 'ko')
         pth_x, pth_y, l_x, l_y = self.create_path(start, path)
         for i in range(len(pth_x)):
-            plt.plot(-pth_x[i], pth_y[i], 'bo')
+            plt.plot(pth_x[i], pth_y[i], 'bo')
         for i in range(len(l_x)):
             plt.plot(l_x[i], l_y[i], 'b')
         plt.title("Normstorm Map")

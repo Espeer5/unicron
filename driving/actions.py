@@ -31,7 +31,7 @@ def line_follow(driveSys, sensor):
         if reading == (1, 1, 1) and ids.check() and (time.time() - start_time) >= .5:
             # Drive forward to place wheels on intersection
             driveSys.drive("STRAIGHT")
-            time.sleep(.35)
+            time.sleep(const.PULLUP_T)
             driveSys.stop()
             return const.SUCCESS
         lr.update()
@@ -45,12 +45,14 @@ def line_follow(driveSys, sensor):
 	        const.FEEDBACK_TABLE.get(reading)[1])
 
 
-def to_head(heading, next_h):
+def to_head(heading, next_h, graph, location):
     """Computes the direction to turn to achieve a certain heading
 
     Arguments: heading - the current bot heading
                next_h - the desired next heading of the bot
     """
+    if (heading + 4) % 8 == next_h:
+        return l_r_unex(graph.get_intersection(location), heading)
     if  next_h in [(heading + i) % 8 for i in range(5)]:
         return "LEFT"
     else: 
@@ -58,7 +60,7 @@ def to_head(heading, next_h):
 
 def l_r_unex(inter, heading):
     """Determines whether turning left or right is better for exploring"""
-    if const.UND in [inter.check_connection((heading + i) % 8) for i in range(5)] or const.UNK in [inter.check_connection((heading + i) % 8) for i in range(5)]:
+    if const.UND in [inter.check_connection((heading + i) % 8) for i in range(4)] or const.UNK in [inter.check_connection((heading + i) % 8) for i in range(4)]:
         return "LEFT"
     else:
         return "RIGHT"
@@ -67,22 +69,21 @@ def l_r_unex(inter, heading):
 def calculate_angle(direction, tm):
     """Calculates the approximate angle turned by the robot for turning 
     in the given direction for the given amount of time"""
-    battery_life = 1
+    battery_life = const.BATT_LIFE
     val = tm * battery_life
-    print(val)
     if direction == "LEFT":
         if val > 1.35:
             return 180
         elif val > 1:
             return 135
-        elif val > 0.65:
+        elif val > 0.6:
             return 90
         else:
             return 45
     elif direction == "RIGHT":
         if val > 1.35:
             return -180
-        elif val > 1.05:
+        elif val > 1.07:
             return -135
         elif val > .65:
             return -90
@@ -119,19 +120,20 @@ def exec_turn(driveSys, sensor, direction):
     #Calculate the angle turned from the total time
     end_time = time.time()
     tm = end_time - start_time
+    print(calculate_angle(direction, tm))
     return calculate_angle(direction, tm)
 
 def explore_turn(driveSys, sensor, direction, graph, location, heading):
     ang = abs(exec_turn(driveSys, sensor, direction))
+    time.sleep(.2)
     graph.markoff(location, ang, heading, direction[0])
     heading = (heading + const.dirMap[direction[0]][1] * ang / 45) % 8
-    time.sleep(.2)
     return heading
 
-def path_follow(driveSys, sensor, path, location, heading):
+def path_follow(driveSys, sensor, path, location, heading, graph):
     for i in range(len(path)):
         # orient robot to optimal heading
-        direction = to_head(heading, path[i])
+        direction = to_head(heading, path[i], graph, location)
         while heading != path[i]:
             angle = abs(exec_turn(driveSys, sensor, direction))
             heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
@@ -145,7 +147,7 @@ def path_follow(driveSys, sensor, path, location, heading):
 
 def check_end(sensor, graph, location, heading):
     if sensor.read() == (0, 0, 0):
-        if graph.get_intersection(location).check_connection(heading) not in [const.UND, const.NNE]:
+        if graph.get_intersection(location).check_connection(heading) not in [const.UNK, const.NNE]:
             raise Exception("Expected road missing! Aborting")
         graph.no_connection(location, heading)
     else:
@@ -159,9 +161,7 @@ def path_explore(driveSys, sensor, path, graph, location, heading):
     prev_loc = None
     for i in range(len(path)):
         # orient robot to optimal heading
-        direction = to_head(heading, path[i])
-        if (heading + 4) % 8 == path[0]:
-            direction = l_r_unex(graph.get_intersection(location), heading)
+        direction = to_head(heading, path[i], graph, location)
         while heading != path[i]:
             heading = explore_turn(driveSys, sensor, direction, graph, location, heading)
         # drive to next intersection if it is not the dest

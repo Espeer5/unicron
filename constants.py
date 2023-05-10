@@ -4,6 +4,9 @@
 # Authors: Edward Speer, Garrett Knuf
 # Date: 4/16/23
 
+#Adjust for the battery charge
+BATT_LIFE = 1.05
+
 # GPIO HARDWARE CONNECTIONS
 L_MOTOR_PINS = (7, 8) # left motor pins (A, B)
 R_MOTOR_PINS = (5, 6) # right motor pins (A, B)
@@ -48,7 +51,7 @@ INTER_T = .032 #Intersection Detector
 
 LR_T = .002 #Left/Right Detector
 
-NR_T = .025 #Next Road Detector
+NR_T = .022 #Next Road Detector
 
 #Driving Constants
 
@@ -65,6 +68,9 @@ dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
 
 # An alias for the intersection found exit condition from line follow
 SUCCESS = 1
+
+#How long to pull up for when arriving to an intersection
+PULLUP_T = .375
 
 #Mapping Constants
 

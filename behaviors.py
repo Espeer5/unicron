@@ -168,7 +168,7 @@ def manual_djik(driveSys, sensor):
     while True:
         # get next location to drive to
         cmd = input("Enter coordinates to drive to: ")
-        dest = (-int(cmd.split(",")[0]), int(cmd.split(",")[1]))
+        dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
         if not graph.contains(dest):
             print("Location does not exist!")
             continue
@@ -180,7 +180,7 @@ def manual_djik(driveSys, sensor):
         print("Path: " + str(path))
 
         # follow the path
-        location, heading = act.path_follow(driveSys, sensor, path, location, heading)
+        location, heading = act.path_follow(driveSys, sensor, path, location, heading, graph)
 
         print("Robot has successfully reached " + str(dest))   
 
@@ -199,6 +199,7 @@ def auto_djik(driveSys, sensor):
     dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
 
     while True:
+        print(["LET ME COOK", "IM COOKIN", "I BE SHAKIN BAKIN", "YAH-YAHHH"][random.randrange(4)])
         if act.line_follow(driveSys, sensor) == const.SUCCESS:
             time.sleep(0.2)
             prev_loc = location
@@ -208,22 +209,37 @@ def auto_djik(driveSys, sensor):
                 graph, tool, djik = pln.init_plan(location, heading)
             else:
                 graph.driven_connection(prev_loc, location, heading)
-
             act.check_end(sensor, graph, location, heading)
-
+            l_heads = [(heading + i) % 8 for i in range(4)]
+            r_heads = [(heading - i) % 8 for i in range(4)]
+            directi = None
+            if const.UNK in [graph.get_intersection(location).check_connection(head) for head in l_heads]:
+                directi = "LEFT"
+            elif const.UNK in [graph.get_intersection(location).check_connection(head) for head in r_heads]:
+                directi = "RIGHT"
+            if directi != None:
+                orig_heading = heading
+                while heading != (orig_heading + 4) % 8:
+                    heading = act.explore_turn(driveSys, sensor, directi, graph, location, heading)
+                continue
             p_head = pln.unx_dir(graph.get_intersection(location))
-
             if p_head != None:
-                act.explore_turn(driveSys, sensor, act.to_head(p_head), graph, location, heading)
+                if p_head == 0:
+                    continue
+                heading = act.explore_turn(driveSys, sensor, act.to_head(heading, p_head, graph, location), graph, location, heading)
+                continue
 
+            if graph.is_complete():
+                complete(graph, tool)
+            
             dest = pln.find_unexplored(graph, location)
-            print(dest)
             if dest == None:
-                act.exec_turn(driveSys, sensor, ['LEFT', 'RIGHT'][random.randrange(2)])
+                direc = pln.unx_dir(graph.get_intersection(location))
+                if direc == None:
+                    direc = heading
+                heading = act.explore_turn(driveSys, sensor, act.to_head(heading, direc, graph, location), graph, location, heading)
                 continue
             djik.reset(dest)
             pth = djik.gen_path(location)
             location, heading = act.path_explore(driveSys, sensor, pth, graph, location, heading)
-            if graph.is_complete():
-                complete(graph, tool)
 
