@@ -143,7 +143,7 @@ def from_pickle():
     from the stored pickle file of the graph
     """
     map_num = input("Which map are you NormStorming on? (Number): ")
-    filename = f'map{map_num}.pickle'
+    filename = f'pickles/map{map_num}.pickle'
     print(f'Loading the map from {filename}.')
     toRet = None
     try:
