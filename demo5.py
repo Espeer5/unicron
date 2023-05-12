@@ -10,7 +10,6 @@ import pigpio
 import constants as const
 import traceback
 from behaviors import auto_djik, manual_djik, navigate
-import time
 
 if __name__ == "__main__":
 

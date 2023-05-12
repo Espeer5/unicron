@@ -16,9 +16,9 @@ import sys
 import random
 import constants as const
 import driving.actions as act
-import pickle
 from mapping.planning import Djikstra
 import mapping.planning as pln
+
 
 def complete(graph, viz):
     """If the passed in graph has been fully emplored, saves the map to a 
@@ -30,6 +30,77 @@ def complete(graph, viz):
     print("Map Complete")
     viz.show()
     sys.exit(0)
+
+
+def explore_turn(driveSys, sensor, direction, graph, location, heading):
+    """Executes a turn around an intersection by the robot while updating the 
+    intersection graph with the observed streets and ensuring self consistency 
+    of the graph.
+    """
+    ang = abs(act.exec_turn(driveSys, sensor, direction))
+    time.sleep(.2)
+    graph.markoff(location, ang, heading, direction[0])
+    heading = (heading + const.dirMap[direction[0]][1] * ang / 45) % 8
+    return heading
+
+
+def path_follow(driveSys, sensor, path, location, heading, graph):
+    """Causes the robot to follow the path generated from a Djikstra instance to a 
+    certain location, by turning to the approriate heading and following the 
+    strees located at that heading from each intersection until the bot is facing the target.
+    """
+    for i in range(len(path)):
+        # orient robot to optimal heading
+        direction = act.to_head(heading, path[i], graph, location)
+        while heading != path[i]:
+            angle = abs(act.exec_turn(driveSys, sensor, direction))
+            heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
+        time.sleep(0.2)
+        # drive to next intersection
+        act.line_follow(driveSys, sensor)
+        location = (location[0] + const.heading_map[heading][0],
+                    location[1] + const.heading_map[heading][1])
+        time.sleep(0.2)
+    return (location, heading)
+
+
+def check_end(sensor, graph, location, heading):
+    """ Checks the street exploration status of the road at the far end of an intersection when the
+    robot arrives at an intersection, check for consistency, and updates the intersection state 
+    in the graph.
+    """
+    if sensor.read() == (0, 0, 0):
+        if graph.get_intersection(location).check_connection(heading) not in [const.UNK, const.NNE]:
+            raise Exception("Expected road missing! Aborting")
+        graph.no_connection(location, heading)
+    else:
+        inter = graph.get_intersection(location)
+        if inter.check_connection(heading) == const.NNE:
+            raise Exception("Road detected where none exists!")
+        if inter.check_connection(heading) != const.DRV:
+            graph.get_intersection(location).set_connection(heading, const.UND)
+
+
+def path_explore(driveSys, sensor, path, graph, location, heading):
+    """Follows a path to a target location produced by a Djikstra instance while also updating
+    the MapGraph with all information observed along the way.
+    """
+    prev_loc = None
+    for i in range(len(path)):
+        # orient robot to optimal heading
+        direction = act.to_head(heading, path[i], graph, location)
+        while heading != path[i]:
+            heading = explore_turn(driveSys, sensor, direction, graph, location, heading)
+        # drive to next intersection if it is not the dest
+        if i != len(path) - 1:
+            act.line_follow(driveSys, sensor)
+            prev_loc = location
+            location = (location[0] + const.heading_map[heading][0],
+                        location[1] + const.heading_map[heading][1])
+            graph.driven_connection(prev_loc, location, heading)
+            check_end(sensor, graph, location, heading)
+        time.sleep(0.2)
+    return (location, heading)
 
 
 def navigate(driveSys, sensor):
@@ -80,6 +151,7 @@ def navigate(driveSys, sensor):
                 heading = (heading + dirMap[direction.upper()][1] * angle / 45) % 8
                 direction = input("Direction (L/R/S)?: ")
 
+
 def auto_explore(driveSys, sensor):
     """
     Allows the robot to autonomously explore a maze of roads until 
@@ -120,7 +192,7 @@ def auto_explore(driveSys, sensor):
                 time.sleep(0.2)
 
             if graph.is_complete():
-                complete(graph)
+                complete(graph, tool)
 
             # turn to undriven road if it exists
             if const.UND in intersection.get_streets().values():
@@ -180,7 +252,7 @@ def manual_djik(driveSys, sensor):
         print("Path: " + str(path))
 
         # follow the path
-        location, heading = act.path_follow(driveSys, sensor, path, location, heading, graph)
+        location, heading = path_follow(driveSys, sensor, path, location, heading, graph)
 
         print("Robot has successfully reached " + str(dest))   
 
@@ -196,8 +268,6 @@ def auto_djik(driveSys, sensor):
     graph = None
     djik = None
 
-    dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
-
     while True:
         print(["LET ME COOK", "IM COOKIN", "I BE SHAKIN BAKIN", "YAH-YAHHH"][random.randrange(4)])
         if act.line_follow(driveSys, sensor) == const.SUCCESS:
@@ -209,7 +279,7 @@ def auto_djik(driveSys, sensor):
                 graph, tool, djik = pln.init_plan(location, heading)
             else:
                 graph.driven_connection(prev_loc, location, heading)
-            act.check_end(sensor, graph, location, heading)
+            check_end(sensor, graph, location, heading)
             l_heads = [(heading + i) % 8 for i in range(4)]
             r_heads = [(heading - i) % 8 for i in range(4)]
             directi = None
@@ -220,13 +290,13 @@ def auto_djik(driveSys, sensor):
             if directi != None:
                 orig_heading = heading
                 while heading != (orig_heading + 4) % 8:
-                    heading = act.explore_turn(driveSys, sensor, directi, graph, location, heading)
+                    heading = explore_turn(driveSys, sensor, directi, graph, location, heading)
                 continue
             p_head = pln.unx_dir(graph.get_intersection(location))
             if p_head != None:
                 if p_head == 0:
                     continue
-                heading = act.explore_turn(driveSys, sensor, act.to_head(heading, p_head, graph, location), graph, location, heading)
+                heading = explore_turn(driveSys, sensor, act.to_head(heading, p_head, graph, location), graph, location, heading)
                 continue
 
             if graph.is_complete():
@@ -237,9 +307,9 @@ def auto_djik(driveSys, sensor):
                 direc = pln.unx_dir(graph.get_intersection(location))
                 if direc == None:
                     direc = heading
-                heading = act.explore_turn(driveSys, sensor, act.to_head(heading, direc, graph, location), graph, location, heading)
+                heading = explore_turn(driveSys, sensor, act.to_head(heading, direc, graph, location), graph, location, heading)
                 continue
             djik.reset(dest)
             pth = djik.gen_path(location)
-            location, heading = act.path_explore(driveSys, sensor, pth, graph, location, heading)
+            location, heading = path_explore(driveSys, sensor, pth, graph, location, heading)
 

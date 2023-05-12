@@ -8,7 +8,7 @@ Date: 5/8/23
 
 from mapping.MapGraph import MapGraph
 from queue import PriorityQueue
-from constants import heading_map, invert_h_map, UND, UNK
+from constants import heading_map, invert_h_map, UND
 from mapping.graphics import Visualizer
 import pickle
 
@@ -115,6 +115,7 @@ class Djikstra:
                     node.get_location()[1] + heading_map[node.get_dir()][1])
             node = self.graph.get_intersection(next_n)
         return path
+
 
 def find_unexplored(graph, curr):
     """Uses a DFS to find a nearby intersection with unexplored headings, so 

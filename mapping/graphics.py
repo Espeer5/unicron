@@ -8,7 +8,6 @@ Date: 5/2
 """
 
 import matplotlib.pyplot as plt
-from mapping.MapGraph import MapGraph, Intersection
 from constants import heading_map
 
 class Visualizer:
