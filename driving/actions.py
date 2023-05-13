@@ -27,17 +27,17 @@ def line_follow(driveSys, sensor):
     start_time = time.time()
     while True:
         reading = sensor.read()
-        ids.update()
+        ids.update(time)
         if reading == (1, 1, 1) and ids.check() and (time.time() - start_time) >= .5:
             # Drive forward to place wheels on intersection
             driveSys.drive("STRAIGHT")
             time.sleep(const.PULLUP_T)
             driveSys.stop()
             return const.SUCCESS
-        lr.update()
+        lr.update(time.time())
 	    # robot is entirely off the line
         if reading == (0, 0, 0):
-            lr_rd = lr.get()
+            lr_rd = lr.get(time.time())
             resp = LR_DET_RESPONSE[lr_rd]
             resp[0](*resp[1])
         elif reading in const.FEEDBACK_TABLE: 
