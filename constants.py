@@ -5,12 +5,15 @@
 # Date: 4/16/23
 
 #Adjust for the battery charge
-BATT_LIFE = 1.05
+BATT_LIFE = 1.08
 
 # GPIO HARDWARE CONNECTIONS
 L_MOTOR_PINS = (7, 8) # left motor pins (A, B)
 R_MOTOR_PINS = (5, 6) # right motor pins (A, B)
 IR_PINS = (14, 15, 18) # IR detector pins (left, middle, right)
+L_ULTRASOUND_PINS = (0, 0) # left ultrasound pins (trigger, echo)
+C_ULTRASOUND_PINS = (0, 0) # center ultrasound pins (trigger, echo)
+R_ULTRASOUND_PINS = (0, 0) # right ultrasound pins (trigger, echo)
 
 #Motor PWM Control Constants
 
@@ -51,7 +54,7 @@ INTER_T = .032 #Intersection Detector
 
 LR_T = .002 #Left/Right Detector
 
-NR_T = .022 #Next Road Detector
+NR_T = .017 #Next Road Detector
 
 #Driving Constants
 
@@ -70,7 +73,7 @@ dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
 SUCCESS = 1
 
 #How long to pull up for when arriving to an intersection
-PULLUP_T = .375
+PULLUP_T = .28
 
 #Mapping Constants
 
