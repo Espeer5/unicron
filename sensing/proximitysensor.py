@@ -8,6 +8,8 @@ Date: 5/13/2023
 
 from sensing.drivers.ultrasound import Ultrasound
 import constants as const
+import pigpio
+from time import sleep
 
 class ProximitySensor():
     """ An object oriented interface for triggering and reading the left,
@@ -20,16 +22,17 @@ class ProximitySensor():
     """
 
     def __init__(self, io):
+        self.io = io
         self.sensors = (Ultrasound(io, const.L_ULTRASOUND_PINS[0],
                                    const.L_ULTRASOUND_PINS[1]),
                         Ultrasound(io, const.C_ULTRASOUND_PINS[0],
                                    const.C_ULTRASOUND_PINS[1]),
                         Ultrasound(io, const.R_ULTRASOUND_PINS[0],
-                                   CONST.R_ULTRASOUND_PINS[1]))
+                                   const.R_ULTRASOUND_PINS[1]))
 
     def trigger(self):
         """ triggers all ultrasound sensors """
-        for i in range(len(self.sensor)):
+        for i in range(len(self.sensors)):
             self.sensors[i].trigger()
 
     def read(self):
@@ -37,6 +40,12 @@ class ProximitySensor():
         return (self.sensors[0].read(),
                 self.sensors[1].read(),
                 self.sensors[2].read())
+    
+    def flight_time(self):
+        return (self.sensors[0].flight_time(),
+                self.sensors[1].flight_time(),
+                self.sensors[2].flight_time())
+
 
 def test():
     print("Setting up the GPIO...")
@@ -48,10 +57,11 @@ def test():
     
     # Create objects
     sensor = ProximitySensor(io)
-    while true:
+    while True:
         #Trigger the ultrasounds and wait 50 ms
         sensor.trigger()
         sleep(.05)
+        sleep(0.5)
 
         #Read/Report
         reading = sensor.read()

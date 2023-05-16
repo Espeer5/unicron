@@ -21,22 +21,25 @@ class Ultrasound():
         pinecho: echo pin of ultrasonic sensor
     """
 
-    SPEED_OF_SOUND = 343000000 # meters per microsecond
+    SPEED_OF_SOUND = 1 / 2835 # meters per microsecond
 
-    def __init(self, io, pintrig, pinecho):
+    def __init__(self, io, pintrig, pinecho):
         self.io = io
+        self.pintrig = pintrig
+        self.pinecho = pinecho
         io.set_mode(pintrig, pigpio.OUTPUT)
         io.set_mode(pinecho, pigpio.INPUT)
         cbrise = io.callback(pinecho, pigpio.RISING_EDGE, self.rising)
         cbfall = io.callback(pinecho, pigpio.FALLING_EDGE, self.falling)
         self.risetick = 0
+        self.last_dt = 0
         self.last_dist = 0
 
     def trigger(self):
         """ pulls the trigger pin high for 10 microseconds """
-        io.write(self.pintrig, 1)
-        time.sleep(0.000010)
-        io.write(self.pinecho, 0)
+        self.io.write(self.pintrig, 1)
+        sleep(0.000010)
+        self.io.write(self.pintrig, 0)
 
     def rising(self, pin, level, ticks):
         """ stores time of last rising edge of echo pin """
@@ -44,12 +47,16 @@ class Ultrasound():
 
     def falling(self, pin, level, ticks):
         """ calculates and stores distance travelled """
-        dt = ticks - self.rise
+        dt = ticks - self.risetick
         # prevent integer overflow
         if dt < 0:
             dt += 2 ** 32
-        print("Flight time: " + str(dt))
-        self.last_dist = dt * SPEED_OF_SOUND / 2
+        self.last_dt = dt
+        self.last_dist = dt * self.SPEED_OF_SOUND / 2
+
+    def flight_time(self):
+        """ return the last flight time of ultrasound pulse """
+        return self.last_dt
 
     def read(self):
         """ returns distance of last ultrasound reading """

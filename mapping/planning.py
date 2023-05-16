@@ -12,44 +12,6 @@ from constants import heading_map, invert_h_map, UND
 from mapping.graphics import Visualizer
 import pickle
 
-class NodeQueue:
-    """ A priority queue of Intersections which is sorted upon 
-    insertion and deletion bny cost to maintain the proper execution 
-    of Djikstra's algorithm
-    
-    Inputs: origin - the goal node for the Djikstra Instance
-    """
-    
-    def __init__(self, origin):
-        self.Q = PriorityQueue()
-        self.Q.put((0, origin))
-
-    def insert(self, node):
-        """Insert an Intersection in the correct sorted order by cost
-        
-        Arguments: node - an Intersection to insert
-        """
-        self.Q.put((node.get_cost(), node))
-
-    def deq(self):
-        """Retrieve, remove, and return the lowest cost intersection"""
-        return self.Q.get()
-
-    def empty(self):
-        """Check if the NodeQueue is empty"""
-        return self.Q.empty()
-    
-    def size(self):
-        """Return the size of the NodeQueue (number of Intersections)"""
-        return self.Q.qsize()
-
-    def remove(self, node):
-        """Remove a given node from the NodeQueue regardless of cost
-        
-        Arguments: node - The node to be removed from the Queue
-        """
-        self.Q.remove(node)
-
 
 class Djikstra:
     """Contains all the objects needed to run Djikstra's, and 
@@ -63,7 +25,9 @@ class Djikstra:
         self.graph = graph
         self.goal = graph.get_intersection(origin)
         self.goal.set_cost(0)
-        self.q = NodeQueue(self.goal)
+        self.q = PriorityQueue()
+        self.q.put((0, origin))
+
 
     def reset(self, origin):
         """Reinitializes the Djikstra object over the given map to use a 
@@ -75,7 +39,8 @@ class Djikstra:
             node.reset()
         self.goal = self.graph.get_intersection(origin)
         self.goal.set_cost(0)
-        self.q = NodeQueue(self.goal)
+        self.q = PriorityQueue()
+        self.q.put((0, origin))
 
     def run(self):
         """ Run Djikstra's algorithm on the graph. This will assign a cost and 
@@ -83,7 +48,7 @@ class Djikstra:
         internally in each Intersection object
         """
         while not self.q.empty():
-            curr = self.q.deq()[1]
+            curr = self.q.get()[1]
             for chile in self.graph.neighbors(curr):
                 delta = (curr.get_location()[0] - chile.get_location()[0],
                          curr.get_location()[1] - chile.get_location()[1])
@@ -94,7 +59,7 @@ class Djikstra:
                         self.q.remove(chile)
                     chile.set_cost(pot_cost)
                     chile.set_dir(pot_dir)
-                    self.q.insert(chile)
+                    self.q.put((node.get_cost(), node))
 
     def gen_path(self, start_point):
         """ Generates a path from the given start point to the goal node of 

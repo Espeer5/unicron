@@ -229,4 +229,17 @@ class MapGraph:
         mapping vertices to other vertices in the graph
         """
         return iter(self.graph)
+
+
+def complete(graph, viz):
+    """If the passed in graph has been fully emplored, saves the map to a
+    pickle file specified by the user, informs user the map is complete, and
+    exits."""
+    filename = input("Enter a file name to save map to: ")
+    with open(filename, 'wb') as filen:
+        pickle.dump(graph, filen)
+    print("Map Complete")
+    viz.show()
+    sys.exit(0)
+
     

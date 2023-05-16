@@ -29,16 +29,6 @@ class DriveSystem():
         PWMFreq: Pulse Width modulation frequency for motor speed control
     """
 
-    # Available drive modes and their corresponding offsets
-    # Define Motor speed offsets in as fractions of normal motor speed
-    MODES = {"STRAIGHT": {None: const.STRAIGHT_S, "LEFT": const.STRAIGHT_S,
-        "RIGHT": const.STRAIGHT_S},
-            "VEER": {"LEFT": const.L_VEER_S, "RIGHT": const.R_VEER_S},
-            "STEER": {"LEFT": const.L_STEER_S, "RIGHT": const.R_STEER_S},
-            "TURN": {"LEFT": const.L_TURN_S, "RIGHT": const.R_TURN_S},
-            "HOOK": {"LEFT": const.L_HOOK_S, "RIGHT": const.R_HOOK_S},
-            "SPIN": {"LEFT": const.L_SPIN_S, "RIGHT": const.R_SPIN_S}}
-
     def __init__(self, io, leftMPins, rightMPins, PWMFreq):
         # instantiate the left and right Motor instances
         self.left_motor = Motor(io, leftMPins, PWMFreq)
@@ -50,6 +40,13 @@ class DriveSystem():
         object. """
         self.left_motor.disable()
         self.right_motor.disable()
+
+    def pwm(self, PWM_L, PWM_R):
+        """A simple utility which sets the driveSystem motors to the passed in l and r 
+        PWM values.
+        """
+        self.left_motor.setSpeed(PWM_L)
+        self.right_motor.setSpeed(PWM_R)
 
     def drive(self, mode, direction=None):
         """ Engages the robot motors to drive the robot along a certain trajectory
@@ -65,18 +62,17 @@ class DriveSystem():
             mode specified is invalid, or if direction specified is not valid
         """
         # Ensure a valid mode is given
-        if(mode not in self.MODES):
+        if(mode not in const.MODES):
             raise Exception("DriveSystem.drive: invalid mode specified")
 
         #Ensure a valid direction is specified for a curving trajectory
-        if(direction not in ["LEFT", "RIGHT"] and direction != None):
+        if direction not in ["LEFT", "RIGHT"] and direction != None:
             raise Exception("DriveSystem.drive: invalid direction specified")
-        if(direction == None and mode != "STRAIGHT"):
+        if direction == None and mode not in ["STRAIGHT", "BACKWARDS"]:
             raise Exception("DriveSystem.drive: Must specify LEFT or RIGHT")
         
         #Set the left and right motor speeds based on mode and direction
-        self.left_motor.setSpeed(self.MODES[mode][direction][0])
-        self.right_motor.setSpeed(self.MODES[mode][direction][1])
+        self.pwm(const.MODES[mode][direction][0], const.MODES[mode][direction][1])
     
     def kick(self, direction):
         """Executes a very short timed full power spin in the specified direction in order 
@@ -87,10 +83,10 @@ class DriveSystem():
         direc = 1
         if direction == "LEFT":
             direc = -1
-        self.left_motor.setSpeed(direc * 255)
-        self.right_motor.setSpeed(direc * 255)
-        time.sleep(.07)
+        self.pwm(direc * 255, direc * 255)
+        time.sleep(const.KICK_TIME)
         self.stop()
+
 
 def test_flower():
     """Execute a test pattern demonstrating all of the movements of the DriveSystem

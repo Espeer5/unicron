@@ -22,13 +22,15 @@ def line_follow(driveSys, sensor):
     LR_DET_RESPONSE = {-1: (driveSys.drive, ["TURN", "LEFT"]),
                         0: (driveSys.drive, ["STRAIGHT"]),
                         1: (driveSys.drive, ["TURN", "RIGHT"])}
-    ids = InterDetector(sensor, const.INTER_T)
-    lr = LRDetector(sensor, const.LR_T)
+    Ntime = time.time()
+    ids = InterDetector(sensor, const.INTER_T, Ntime)
+    lr = LRDetector(sensor, const.LR_T, Ntime)
     start_time = time.time()
     while True:
         reading = sensor.read()
-        ids.update(time)
-        if reading == (1, 1, 1) and ids.check() and (time.time() - start_time) >= .5:
+        Ntime = time.time()
+        ids.update(time.time())
+        if reading == (1, 1, 1) and ids.check(Ntime) and (Ntime - start_time) >= .5:
             # Drive forward to place wheels on intersection
             driveSys.drive("STRAIGHT")
             time.sleep(const.PULLUP_T)
@@ -58,12 +60,16 @@ def to_head(heading, next_h, graph, location):
     else: 
         return "RIGHT"
 
+
 def l_r_unex(inter, heading):
     """Determines whether turning left or right is better for exploring"""
-    if const.UND in [inter.check_connection((heading + i) % 8) for i in range(4)] or const.UNK in [inter.check_connection((heading + i) % 8) for i in range(4)]:
-        return "LEFT"
-    else:
-        return "RIGHT"
+    l_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    r_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    if const.UND in l_list:
+        if const.UND in r_list:
+            if r_list.index(UND) < l_list.index(UND):
+                return "RIGHT"
+    return "LEFT"
 
 
 def calculate_angle(direction, tm):
@@ -106,13 +112,13 @@ def exec_turn(driveSys, sensor, direction):
     #Perform a short kick to overcome resistance
     driveSys.kick(direction)
 
-    edgeDetector = NextRoadDetector(sensor, const.NR_T, direction)
+    edgeDetector = NextRoadDetector(sensor, const.NR_T, direction, start_time)
     while not edgeDetector.found_road():
         driveSys.drive("SPIN", direction)
     # first sensor has crossed the line
 
     # wait for center sensor to cross line for timing
-    centerDetector = NextRoadDetector(sensor, const.NR_T, "CENTER")
+    centerDetector = NextRoadDetector(sensor, const.NR_T, "CENTER", time.time())
     while not centerDetector.found_road():
         pass
     driveSys.stop()

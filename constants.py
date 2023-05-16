@@ -11,9 +11,9 @@ BATT_LIFE = 1.08
 L_MOTOR_PINS = (7, 8) # left motor pins (A, B)
 R_MOTOR_PINS = (5, 6) # right motor pins (A, B)
 IR_PINS = (14, 15, 18) # IR detector pins (left, middle, right)
-L_ULTRASOUND_PINS = (0, 0) # left ultrasound pins (trigger, echo)
-C_ULTRASOUND_PINS = (0, 0) # center ultrasound pins (trigger, echo)
-R_ULTRASOUND_PINS = (0, 0) # right ultrasound pins (trigger, echo)
+L_ULTRASOUND_PINS = (13, 16) # left ultrasound pins (trigger, echo)
+C_ULTRASOUND_PINS = (19, 20) # center ultrasound pins (trigger, echo)
+R_ULTRASOUND_PINS = (26, 21) # right ultrasound pins (trigger, echo)
 
 #Motor PWM Control Constants
 
@@ -23,30 +23,14 @@ PWM_FREQ = 1000 # PWM frequency for motor control
 #Due to hardware inconsistencies, these had to be fine tuned
 #and determined experimentally
 
-STRAIGHT_S = (195, -225) #Speeds to drive straight
-
-L_VEER_S = (159, -225) #Speeds to veer left
-
-R_VEER_S = (205, -193) #Speeds to veer right
-
-L_STEER_S = (148, -225) #Speeds to steer left
-
-R_STEER_S = (205, -180) #Speeds to steer right
-
-L_TURN_S = (92, -225) #Speeds to turn left
-
-
-R_TURN_S = (205, -113) #Speeds to turn right
-
-L_HOOK_S = (0, -215) #Speeds to hook left
-
-R_HOOK_S = (190, 0) #Speeds to hook right
-
-#L_SPIN_S = (-165, -175) #Speeds to spin left
-L_SPIN_S = (-180, -190)
-
-#R_SPIN_S = (153, 183) #Speeds to spin right
-R_SPIN_S = (150, 180)
+MODES = {"STRAIGHT": {None: (195, -225), "LEFT": (195, -225),
+        "RIGHT": (195, -225)},
+            "VEER": {"LEFT": (159, -225), "RIGHT": (205, -193)},
+            "STEER": {"LEFT": (148, -225), "RIGHT": (205, -180)},
+            "TURN": {"LEFT": (92, -225), "RIGHT": (205, -113)},
+            "HOOK": {"LEFT": (0, -215), "RIGHT": (190, 0)},
+            "SPIN": {"LEFT": (-180, -190), "RIGHT": (150, 180)},
+            "BACKWARDS": {None: (-195, 225)}}
 
 #Detector Tau Values
 
@@ -64,7 +48,7 @@ FEEDBACK_TABLE = {(0, 1, 0): ("STRAIGHT", None),
                      (0, 1, 1): ("TURN", "RIGHT"), \
                      (0, 0, 1): ("TURN", "RIGHT"), \
 		             (1, 1, 0): ("TURN", "LEFT"), \
-		             (1, 0, 0): ("TURN", "LEFT")}
+                     (1, 0, 0): ("TURN", "LEFT")}
 
 #Map directions from user input to string and integer directions
 dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
@@ -74,6 +58,9 @@ SUCCESS = 1
 
 #How long to pull up for when arriving to an intersection
 PULLUP_T = .28
+
+#The amount of time over which a full power kick is executed initiating a turn
+KICK_TIME = .07
 
 #Mapping Constants
 
@@ -89,8 +76,14 @@ invert_h_map= {(0, 1): 0, (1, 1): 1, (1, 0): 2, (1, -1):3,
 CONDITIONS = ["UNKNOWN", "UNDRIVEN", "NONE", "DRIVEN"]
 
 #Aliases for individual exploration conditions
-
 UNK = CONDITIONS[0]
 UND = CONDITIONS[1]
 NNE = CONDITIONS[2]
 DRV = CONDITIONS[3]
+
+# Ultrasonic and wall-following constants
+WALL_FOLLOW_DIST = 0.3
+US_DELAY = 0.05
+US_THRESHOLD = 0.1
+WALL_FOLLOW_PROP = 300
+

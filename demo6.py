@@ -1,15 +1,15 @@
-""" This file contains the fifth weekly demo for CS/ME/EE 129 for team Unicron.
+""" This file contains the goals #7 demo for CS/ME/EE 129 for team Unicron.
 """
 
 # Authors: Edward Speer, Garrett Knuf
-# Date: 5/7/23
+# Date: 5/15/23
 
 from driving.driveSystem import DriveSystem
-from sensing.linesensor import LineSensor
+from sensing.proximitysensor import ProximitySensor
 import pigpio
 import constants as const
 import traceback
-from behaviors import explore, manual_djik
+from behaviors import herd, wall_follow, discrete_wall_follow, proportional_wall_follow
 from textwrap import dedent
 
 if __name__ == "__main__":
@@ -25,19 +25,25 @@ if __name__ == "__main__":
     # Create objects
     driveSys = DriveSystem(io, const.L_MOTOR_PINS, const.R_MOTOR_PINS, \
                            const.PWM_FREQ)
-    IRSense = LineSensor(io, const.IR_PINS)
+    ultraSense = ProximitySensor(io)
 
     try:
         cmd = input(dedent("""\
-                     1: Explore the map manually
-                     2: Navigate a map using Djikstra's
-                     3: Auto-explore the map """))
+                     1: Herd the Normstorm
+                     2: Discrete wall-follow
+                     3: Proportional feedback wall-follow\n"""))
         if cmd == "1":
-            explore(driveSys, IRSense, "MANUAL")
+            herd(driveSys, ultraSense)
         elif cmd == "2":
-            manual_djik(driveSys, IRSense)
+            direction = input("Follow a 'L' or 'R' wall: ").upper()
+            dirs = {'L': "LEFT", 'R': "RIGHT"}
+            wall_follow(driveSys, ultraSense, dirs[direction],
+                        discrete_wall_follow)
         elif cmd == "3":
-            explore(driveSys, IRSense, "DJIK")
+            direction = input("Follow a 'L' or 'R' wall: ").upper()
+            dirs = {'L': "LEFT", 'R': "RIGHT"}
+            wall_follow(driveSys, ultraSense, dirs[direction],
+                        proportional_wall_follow)      
         else:
             print("Invalid command, exiting...")
     except BaseException as ex:		

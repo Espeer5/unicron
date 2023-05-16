@@ -26,29 +26,29 @@ class Filters:
     FILTER_MIN_THRESHOLD = 0.2
     FILTER_MAX_THRESHOLD = 0.8
 
-    def __init__(self, linesensor, T, time):
+    def __init__(self, linesensor, T, Ntime):
         self.linesensor = linesensor
         self.filteredVals = [val for val in linesensor.read()]
         self.T = T
-        self.last_time = time
+        self.last_time = Ntime
         self.last_state = [val for val in linesensor.read()]
 
-    def update(self, time):
+    def update(self, Ntime):
         """ Applies the filtering algorithm to each IR sensor, 
             detecting how much time has passed since the previous 
             update
         """
-        dt = time - self.last_time
+        dt = Ntime - self.last_time
         self.filteredVals = [self.filteredVals[i] + (dt / self.T) *
                 (self.linesensor.read()[i] - self.filteredVals[i])
                 for i in range(len(self.filteredVals))]
-        self.last_time = time
+        self.last_time = Ntime
 
-    def get(self, time):
+    def get(self, Ntime):
         """ returns a list with filtered binary states of line sensor
             Filtered values are sent to 1 if greater than the 
             filter threshold, 0 otherwise."""
-        self.update(time)
+        self.update(Ntime)
         output = []
         for i in range(len(self.filteredVals)):
             if self.filteredVals[i] >= self.FILTER_MAX_THRESHOLD:
@@ -71,17 +71,17 @@ class InterDetector:
                 T: time sensitivity constant for filtering
     """
 
-    def __init__(self, linesensor, T, time):
-        self.filters = Filters(linesensor, T, time)
+    def __init__(self, linesensor, T, Ntime):
+        self.filters = Filters(linesensor, T, Ntime)
 
-    def update(self, time):
+    def update(self, Ntime):
         """ Updates the filtered values of each sensor
         """
-        self.filters.update(time)
+        self.filters.update(Ntime)
 
-    def check(self, time):
+    def check(self, Ntime):
         """ return 1 is an intersection is detected, 0 otherwise """
-        if self.filters.get(time) == [1, 1, 1]:
+        if self.filters.get(Ntime) == [1, 1, 1]:
             return 1
         else:
             return 0
@@ -105,31 +105,31 @@ class LRDetector:
     # Filtered values above this threshold indicate line departure
     THRESHOLD = 0.5
 
-    def __init__(self, linesensor, T, time):
-        self.filters = Filters(linesensor, T)
+    def __init__(self, linesensor, T, Ntime):
+        self.filters = Filters(linesensor, T, Ntime)
         self.linesensor = linesensor
         self.buffer = 0
         self.T = T
-        self.last_time = time
+        self.last_time = Ntime
 
-    def update(self, time):
+    def update(self, Ntime):
         """ update the filter based on time elapsed and importance of sensor
             reading """
-        reading = tuple(self.filters.get(time))
+        reading = tuple(self.filters.get(Ntime))
         if self.position_weights[reading] != 0:
-            dt = time - self.last_time
+            dt = Ntime - self.last_time
             self.buffer += (dt / self.T) * (self.position_weights[reading]
                                     - self.buffer)
-        self.last_time = time
+        self.last_time = Ntime
 
-    def get(self):
+    def get(self, Ntime):
         """
         gets the filtered position of robot and returns the following
             1: LEFT
             0: STRAIGHT
             -1: RIGHT
         """
-        self.update(time)
+        self.update(Ntime)
         if self.buffer >= self.THRESHOLD:
             return 1    # left
         elif self.buffer <= -self.THRESHOLD:
@@ -155,35 +155,35 @@ class NextRoadDetector:
     # Aliases for the tuple indices of each position sensor
     sense_map = {"LEFT": 0, "CENTER": 1, "RIGHT": 2}
 
-    def __init__(self, linesensor, T, direction, time):
-        self.filters = Filters(linesensor, T, time)
+    def __init__(self, linesensor, T, direction, Ntime):
+        self.filters = Filters(linesensor, T, Ntime)
         self.linesensor = linesensor
         self.T = T
         self.direction = direction
-        self.last_time = time
+        self.last_time = Ntime
         self.active = False
         if direction == "CENTER":
             self.buffer = 1
         else:        
             self.buffer = 0
 
-    def update(self, time):
+    def update(self, Ntime):
         """ Applies the filtering algorithm to each reading to screen out 
         noise based on how much time has elapsed.
         """
         if self.active:
-            reading = self.filters.get(time)[self.sense_map[self.direction]]
-            dt = time - self.last_time
+            reading = self.filters.get(Ntime)[self.sense_map[self.direction]]
+            dt = Ntime - self.last_time
             self.buffer += (dt / self.T) * (reading - self.buffer)
-            self.last_time = time
+            self.last_time = Ntime
         else:
-            if self.filters.get()[self.sense_map["CENTER"]] == 0:
+            if self.filters.get(Ntime)[self.sense_map["CENTER"]] == 0:
                 self.active = True
         
     def found_road(self):
         """ Returns a boolean indicating if the filtered sensors indicate 
         the next road has been found.
         """
-        self.update(time)
+        self.update(time.time())
         return self.buffer >= self.THRESHOLD
     
