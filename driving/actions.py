@@ -20,7 +20,7 @@ def line_follow(driveSys, sensor):
                         sensing
     """
     LR_DET_RESPONSE = {-1: (driveSys.drive, ["TURN", "LEFT"]),
-                        0: (driveSys.drive, ["STRAIGHT"]),
+                        0: (past_end, []),
                         1: (driveSys.drive, ["TURN", "RIGHT"])}
     Ntime = time.time()
     ids = InterDetector(sensor, const.INTER_T, Ntime)
@@ -68,7 +68,7 @@ def l_r_unex(inter, heading):
     r_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
     if const.UND in l_list:
         if const.UND in r_list:
-            if r_list.index(UND) < l_list.index(UND):
+            if r_list.index(const.UND) < l_list.index(const.UND):
                 return "RIGHT"
     return "LEFT"
 
@@ -127,7 +127,6 @@ def exec_turn(driveSys, sensor, direction):
     #Calculate the angle turned from the total time
     end_time = time.time()
     tm = end_time - start_time
-    print(calculate_angle(direction, tm))
     time.sleep(.5)
     return calculate_angle(direction, tm)
 

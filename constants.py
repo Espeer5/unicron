@@ -5,7 +5,7 @@
 # Date: 4/16/23
 
 #Adjust for the battery charge
-BATT_LIFE = .856
+BATT_LIFE = .84
 
 # GPIO HARDWARE CONNECTIONS
 L_MOTOR_PINS = (7, 8) # left motor pins (A, B)
@@ -33,7 +33,7 @@ MODES = {"STRAIGHT": {None: (200, -225), "LEFT": (200, -225),
 
 #Detector Tau Values
 
-INTER_T = .042 #Intersection Detector
+INTER_T = .038 #Intersection Detector
 
 LR_T = .002 #Left/Right Detector
 
@@ -56,7 +56,7 @@ dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
 SUCCESS = 1
 
 #How long to pull up for when arriving to an intersection
-PULLUP_T = .39
+PULLUP_T = .42
 
 #The amount of time over which a full power kick is executed initiating a turn
 KICK_TIME = .07

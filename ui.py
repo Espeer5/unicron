@@ -11,7 +11,7 @@ import threading
 import ctypes
 from behaviors import *
 
-def get_input():
+def get_input_simple():
     """
     This function gets the user input from the terminal and returns the
     appropriate flags to the main UI loop to indicate what actions should be 
@@ -56,7 +56,7 @@ def kill_robot(robot_thread):
     return None
 
 
-def ui(func):
+def ui_simple(func):
     """Takes in input from the user and causes the robot to execute the desired 
     behavior in a new thread.
     """
@@ -85,3 +85,47 @@ def ui(func):
         if robot_thread != None:
             kill_robot(robot_thread)
     print("Exiting")
+
+
+def cmp_input():
+    CMD_DICT = {
+        "pause": [True, False, True, False, False, False, False],
+        "explore": [True, False, -1, -1, False, -1, False],
+        "goal": [False, True, -1, -1, False, -1, False],
+        "show": [-1, -1, -1, -1, -1, True, False],
+        "stepping": [-1, -1, True, -1, -1, -1, False],
+        "step": [-1, -1, -1, True, -1, -1, False],
+        "save": [-1, -1, -1, -1, True, -1, False],
+        "quit": [-1, -1, -1, -1, -1, -1, True]
+    }
+    while True:
+        cmd = input("input command: ").lower()
+        if cmd in CMD_DICT:
+            return CMD_DICT[cmd]
+        else:
+            print("Invalid command")
+
+def ui_cmp():
+    try:
+        plan = input("Would you like to load a map? (y/n)").lower()
+        pickle = False
+        if plan == "y":
+            pickle = True
+        flags = [False for i in range(7)]
+        robot_thread = threading.Thread(name="RobotThread", \
+                                 target=master,
+                                 args=[flags, pickle])
+        robot_thread.start()
+        while True:
+            temp = cmp_input()
+            for i in range(len(flags)):
+                if temp[i] != -1:
+                    flags[i] = temp[i]
+            if flags[6] == 1:
+                kill_robot()
+                break
+    except KeyboardInterrupt:
+        if robot_thread != None:
+            kill_robot(robot_thread)
+    print("Exiting")
+    

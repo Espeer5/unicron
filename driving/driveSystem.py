@@ -33,7 +33,6 @@ class DriveSystem():
         # instantiate the left and right Motor instances
         self.left_motor = Motor(io, leftMPins, PWMFreq)
         self.right_motor = Motor(io, rightMPins, PWMFreq)
-        print("Motors Ready...")
        
     def stop(self):
         """ Immediately stops all motion of the robot controlled by the DriveSystem 

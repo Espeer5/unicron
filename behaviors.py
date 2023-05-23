@@ -52,6 +52,7 @@ def begin_behavior(func):
         driveSys.stop()
         io.stop()
 
+
 def explore_turn(driveSys, sensor, direction, graph, location, heading):
     """Executes a turn around an intersection by the robot while updating the 
     intersection graph with the observed streets and ensuring self consistency 
@@ -123,12 +124,11 @@ def path_explore(driveSys, sensor, path, graph, location, heading):
     return (location, heading)
 
 
-def explore(driveSys, sensor, mode):
+def explore(driveSys, sensor, mode, stepping, step):
     """ This function is an abstraction of the general format of the bots
     exploration behaviors, which uses a functional pointer to access the required 
     behavior executed at intersections.
     """
-
     #Behavioral options for exploration
     EXPL_MODES = {"MANUAL": navigate, "AUTO": auto_explore, "DJIK": auto_djik}
 
@@ -139,6 +139,7 @@ def explore(driveSys, sensor, mode):
     tool = None
     djik = None
     while True:
+        cmd_act()
         if act.line_follow(driveSys, sensor) == const.SUCCESS:
             time.sleep(.2)
             prev_loc = location
@@ -222,13 +223,22 @@ def auto_explore(driveSys, sensor, tool, graph, location, heading, djik):
         return (graph, location, heading)
 
         
-def auto_djik(driveSys, sensor, tool, graph, location, heading, djik):
+def auto_djik(driveSys, sensor, path, graph, location, heading, djik, prev_loc):
     """Uses Djikstra's algorithm to intelligently explore the map by taking
     efficient paths to unexplored locations
     """
+    check_end(sensor, graph, location, heading)
+    if path != []:
+        path_elem = path.pop()
+        direction = act.to_head(heading, path_elem, graph, location)
+        while heading != path_elem:
+            angle = abs(act.explore_turn(driveSys, sensor, direction))
+            heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
+        time.sleep(.02)
+        return (path, graph, location, heading)
     graph, location, heading, explored = auto_inters(driveSys, sensor, graph, heading, location)
     if explored:
-        return (graph, location, heading)
+        return (path, graph, location, heading)
     else:
         #Otherwise, use Djikstra to find an efficient path to an unexplored location
         dest = pln.find_unexplored(graph, location)
@@ -237,53 +247,48 @@ def auto_djik(driveSys, sensor, tool, graph, location, heading, djik):
             if direc == None:
                 direc = heading
             heading = explore_turn(driveSys, sensor, act.to_head(heading, direc, graph, location), graph, location, heading)
-            return (graph, location, heading)
+            return (path, graph, location, heading)
         djik.reset(dest)
-        pth = djik.gen_path(location)
-        location, heading = path_explore(driveSys, sensor, pth, graph, location, heading)
+        path = djik.gen_path(location)
+        path_elem = path.pop()
+        direction = act.to_head(heading, path_elem, graph, location)
+        while heading != path_elem:
+            angle = abs(act.exec_turn(driveSys, sensor, direction))
+            heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
+        time.sleep(.02)
+        return (path, graph, location, heading)
 
-        return (graph, location, heading)
 
-
-def manual_djik(driveSys, sensor):
+def manual_djik(driveSys, sensor, path, heading, graph, location, djik):
     """Use Djikstra's algorithm to find the shortest path to a specified
     location in a predetermined map and then follows the path
     """
-    # Initial conditions (robot needs to be set at origin)
-    heading = 0
-    location = (0, 0)
-
-    # load the map from file
-    graph = pln.from_pickle()
-    tool = Visualizer(graph)
-    djik = Djikstra(graph, (0, 0))
-    tool.show()
-    graph.print_graph()
-    
-    # Drive forward to orient the bot within the map
-    act.line_follow(driveSys, sensor)
-    location = (location[0] + const.heading_map[heading][0],
-                location[1] + const.heading_map[heading][1])
-
-    # Navigate to user requested locations until aborted
-    while True:
-        # get next location to drive to
-        cmd = input("Enter coordinates to drive to: ")
-        dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
-        if not graph.contains(dest):
-            print("Location does not exist!")
-            continue
+    if path != []:
+        path_elem = path.pop()
+        direction = act.to_head(heading, path_elem, graph, location)
+        while heading != path_elem:
+            angle = abs(act.exec_turn(driveSys, sensor, direction))
+            heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
+        time.sleep(.02)
+        return (path, heading, graph, location)
+    else:
+        cmd = input("Enter new coordinates to drive to: ")
+        while path == []:
+            dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
+            while not graph.contains(dest):
+                print("Location does not exist!")
+                dest = input("Enter valid coordinates")
+            # run algorithm and determine best path to travel
+            djik.reset(dest)
+            path = djik.gen_path(location)
         print("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...")
-
-        # run algorithm and determine best path to travel
-        djik.reset(dest)
-        path = djik.gen_path(location)
-        print("Path: " + str(path))
-
-        # follow the path
-        location, heading = path_follow(driveSys, sensor, path, location, heading, graph)
-
-        print("Robot has successfully reached " + str(dest))   
+        path_elem = path.pop()
+        direction = act.to_head(heading, path_elem, graph, location)
+        while heading != path_elem:
+            angle = abs(act.exec_turn(driveSys, sensor, direction))
+            heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
+        time.sleep(.02)
+        return (path, heading, graph, location)  
 
 
 def herd(driveSys, sensor):
@@ -356,6 +361,7 @@ def wall_follow(driveSys, sensor, correcter):
         # call the corresponding function to make drive system adjust
         correcter(driveSys, wall_loc, error)
 
+
 def discrete_wall_follow(driveSys, wall_loc, error):
     """ drive train adjustment based on error and discrete drive settings """
     error_correction = {0.02: "STRAIGHT", 0.1: "VEER"}
@@ -372,6 +378,7 @@ def discrete_wall_follow(driveSys, wall_loc, error):
             driveSys.drive(error_correction[key], direction)
             break
 
+
 def proportional_wall_follow(driveSys, wall_loc, error):
     """ drive train adjustment based on error and constant of
         proportionality """
@@ -382,3 +389,74 @@ def proportional_wall_follow(driveSys, wall_loc, error):
     right_speed = max(const.MODES["STRAIGHT"][None][1] + error * prop_const, -255)
     driveSys.pwm(left_speed, right_speed)
 
+
+def master(flags, pickle=False):
+    # Initialize hardware
+    io = pigpio.pi()
+    if not io.connected:
+        sys.exit(0)
+    # Instantiate hardware objects
+    driveSys = DriveSystem(io, const.L_MOTOR_PINS, \
+                                const.R_MOTOR_PINS, \
+                                const.PWM_FREQ)
+    sensor = LineSensor(io, const.IR_PINS)
+    while((flags[0], flags[1]) == (False, False)):
+        time.sleep(2)
+        continue
+    graph = None 
+    if pickle:
+        graph = pln.from_pickle()
+    if graph == None and flags[1]:
+        raise Exception("Norman needs a map to navigate >:(")
+    if flags[0] and flags[1]:
+        raise Exception("Norman cannot explore and navigate at the same time >:(")
+    location = (0, 0)
+    heading = 0 
+    prev_loc = (0, 0)
+    tool = None
+    if graph != None:
+        tool = Visualizer(graph)
+    djik = None 
+    if graph != None:
+        djik = Djikstra(graph, (0, 0))
+    path = []
+    try:
+        while True:
+            if djik == None and graph != None:
+                djik = Djikstra(graph, (0, 0))
+            if flags[6]:
+                break
+            if flags[4]:
+                complete(graph, tool)
+                sv = False
+            if flags[5]:
+                if tool == None:
+                    print("Norman has no map to display >:(")
+                else:
+                    tool.show()
+            if act.line_follow(driveSys, sensor) == const.SUCCESS:
+                prev_loc = location
+                location = (location[0] + const.heading_map[heading][0], 
+                            location[1] + const.heading_map[heading][1])
+                if graph == None:
+                    graph, tool, djik = pln.init_plan(location, heading)
+                else:
+                    graph.driven_connection(prev_loc, location, heading)
+                if flags[2]:
+                    while not flags[3]:
+                        continue
+                    flags[3] = False
+                time.sleep(.2)
+                if flags[1]:
+                    path, heading, graph, location = manual_djik(driveSys, sensor, path, heading, graph, location, djik)
+                    continue
+                if flags[0]:
+                    path, graph, location, heading = auto_djik(driveSys, sensor, path, graph, location, heading, djik, prev_loc)
+                    continue
+        print("Shutting down")
+        driveSys.stop()
+        io.stop()
+    except KeyboardInterrupt:
+        print("Shutting down")
+        driveSys.stop()
+        io.stop()
