@@ -9,7 +9,8 @@ Date: 5/13/2023
 from sensing.drivers.ultrasound import Ultrasound
 import constants as const
 import pigpio
-from time import sleep
+import time
+import threading
 
 class ProximitySensor():
     """ An object oriented interface for triggering and reading the left,
@@ -29,11 +30,27 @@ class ProximitySensor():
                                    const.C_ULTRASOUND_PINS[1]),
                         Ultrasound(io, const.R_ULTRASOUND_PINS[0],
                                    const.R_ULTRASOUND_PINS[1]))
+        print("Starting triggering thread...")
+        self.triggering = True
+        self.thread = threading.Thread(name="TriggerThread", target=self.run)
+        self.thread.start()
+        time.sleep(0.1) # Wait for the first measurements to arrive
 
     def trigger(self):
         """ triggers all ultrasound sensors """
         for i in range(len(self.sensors)):
             self.sensors[i].trigger()
+
+    def run(self):
+        while self.triggering:
+            self.trigger()
+            time.sleep(0.05)
+
+    def shutdown(self):
+        self.triggering = False
+        print("Waiting for triggering thread to finish...")
+        self.thread.join()
+        print("Triggering thread returned.")
 
     def read(self):
         """ returns the readings of ultrasound sensors (left, center, right)"""
@@ -61,7 +78,6 @@ def test():
         #Trigger the ultrasounds and wait 50 ms
         sensor.trigger()
         sleep(.05)
-        sleep(0.5)
 
         #Read/Report
         reading = sensor.read()

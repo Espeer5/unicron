@@ -238,7 +238,7 @@ def complete(graph, viz):
     filename = input("Enter a file name to save map to: ")
     with open(filename, 'wb') as filen:
         pickle.dump(graph, filen)
-    print("Map Complete")
+    print("Map Saved")
     viz.show()
     sys.exit(0)
 

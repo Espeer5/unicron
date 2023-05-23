@@ -162,10 +162,7 @@ class NextRoadDetector:
         self.direction = direction
         self.last_time = Ntime
         self.active = False
-        if direction == "CENTER":
-            self.buffer = 1
-        else:        
-            self.buffer = 0
+        self.buffer = 0
 
     def update(self, Ntime):
         """ Applies the filtering algorithm to each reading to screen out 

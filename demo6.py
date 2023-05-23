@@ -53,6 +53,7 @@ if __name__ == "__main__":
 
     # Turn off hardware then disconnect the interface
     print("Turning off...")
+    ultraSense.shutdown()
     driveSys.stop()
     io.stop()
 

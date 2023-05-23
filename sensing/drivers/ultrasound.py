@@ -21,7 +21,7 @@ class Ultrasound():
         pinecho: echo pin of ultrasonic sensor
     """
 
-    SPEED_OF_SOUND = 1 / 2835 # meters per microsecond
+    SPEED_OF_SOUND = .88 / 2835 # meters per microsecond
 
     def __init__(self, io, pintrig, pinecho):
         self.io = io

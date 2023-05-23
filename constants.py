@@ -5,7 +5,7 @@
 # Date: 4/16/23
 
 #Adjust for the battery charge
-BATT_LIFE = 1.08
+BATT_LIFE = .856
 
 # GPIO HARDWARE CONNECTIONS
 L_MOTOR_PINS = (7, 8) # left motor pins (A, B)
@@ -22,19 +22,18 @@ PWM_FREQ = 1000 # PWM frequency for motor control
 #PWM Settings for each motor for each type of motion (l, r)
 #Due to hardware inconsistencies, these had to be fine tuned
 #and determined experimentally
-
-MODES = {"STRAIGHT": {None: (195, -225), "LEFT": (195, -225),
-        "RIGHT": (195, -225)},
+MODES = {"STRAIGHT": {None: (200, -225), "LEFT": (200, -225),
+        "RIGHT": (200, -225)},
             "VEER": {"LEFT": (159, -225), "RIGHT": (205, -193)},
             "STEER": {"LEFT": (148, -225), "RIGHT": (205, -180)},
             "TURN": {"LEFT": (92, -225), "RIGHT": (205, -113)},
             "HOOK": {"LEFT": (0, -215), "RIGHT": (190, 0)},
-            "SPIN": {"LEFT": (-180, -190), "RIGHT": (150, 180)},
+            "SPIN": {"LEFT": (-180, -190), "RIGHT": (158, 188)},
             "BACKWARDS": {None: (-195, 225)}}
 
 #Detector Tau Values
 
-INTER_T = .032 #Intersection Detector
+INTER_T = .042 #Intersection Detector
 
 LR_T = .002 #Left/Right Detector
 
@@ -57,7 +56,7 @@ dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
 SUCCESS = 1
 
 #How long to pull up for when arriving to an intersection
-PULLUP_T = .28
+PULLUP_T = .39
 
 #The amount of time over which a full power kick is executed initiating a turn
 KICK_TIME = .07
@@ -85,5 +84,5 @@ DRV = CONDITIONS[3]
 WALL_FOLLOW_DIST = 0.3
 US_DELAY = 0.05
 US_THRESHOLD = 0.1
-WALL_FOLLOW_PROP = 300
+WALL_FOLLOW_PROP = 700
 

@@ -35,6 +35,7 @@ def line_follow(driveSys, sensor):
             driveSys.drive("STRAIGHT")
             time.sleep(const.PULLUP_T)
             driveSys.stop()
+            time.sleep(.5)
             return const.SUCCESS
         lr.update(time.time())
 	    # robot is entirely off the line
@@ -78,7 +79,7 @@ def calculate_angle(direction, tm):
     battery_life = const.BATT_LIFE
     val = tm * battery_life
     if direction == "LEFT":
-        if val > 1.35:
+        if val > 1.42:
             return 180
         elif val > 1:
             return 135
@@ -87,7 +88,7 @@ def calculate_angle(direction, tm):
         else:
             return 45
     elif direction == "RIGHT":
-        if val > 1.35:
+        if val > 1.42:
             return -180
         elif val > 1.07:
             return -135
@@ -120,13 +121,14 @@ def exec_turn(driveSys, sensor, direction):
     # wait for center sensor to cross line for timing
     centerDetector = NextRoadDetector(sensor, const.NR_T, "CENTER", time.time())
     while not centerDetector.found_road():
-        pass
+        continue
     driveSys.stop()
 
     #Calculate the angle turned from the total time
     end_time = time.time()
     tm = end_time - start_time
     print(calculate_angle(direction, tm))
+    time.sleep(.5)
     return calculate_angle(direction, tm)
 
 

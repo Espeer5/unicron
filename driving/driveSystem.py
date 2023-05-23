@@ -99,9 +99,9 @@ def test_flower():
     print("GPIO ready...")
     driveSys = DriveSystem(io, const.L_MOTOR_PINS, const.R_MOTOR_PINS, \
                            const.PWM_FREQ)
-    for style in driveSys.MODES:
-        if style not in ["SPIN"]:
-            continue
+    for style in const.MODES:
+        #if style not in ["SPIN"]:
+            #continue
         for direction in ["LEFT", "RIGHT"]:
             input("Hit Return")
             driveSys.drive(style, direction)

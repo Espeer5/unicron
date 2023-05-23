@@ -10,6 +10,7 @@ Date: 4/24/23
 
 # Imports
 import time
+import pigpio
 from mapping.MapGraph import MapGraph
 from mapping.MapGraph import complete
 from mapping.graphics import Visualizer
@@ -17,11 +18,39 @@ import sys
 import random
 import constants as const
 import driving.actions as act
+from driving.driveSystem import DriveSystem
+from sensing.linesensor import LineSensor
 from mapping.planning import Djikstra
 import mapping.planning as pln
 import pickle
 from sensing.proximitysensor import ProximitySensor
 
+
+def begin_behavior(func):
+    # Initialize hardware
+    print("Setting up the GPIO...")
+    io = pigpio.pi()
+    if not io.connected:
+        print("Unable to connect to pigpio unicron!")
+        sys.exit(0)
+    print("GPIO ready...")
+
+    # Instantiate hardware objects
+    driveSys = DriveSystem(io, const.L_MOTOR_PINS, \
+                                const.R_MOTOR_PINS, \
+                                const.PWM_FREQ)
+    IRSense = LineSensor(io, const.IR_PINS)
+    ultraSense = ProximitySensor(io)
+    ARG_MAP = {
+    herd: (driveSys, ultraSense), 
+    wall_follow: (driveSys, ultraSense, proportional_wall_follow)
+    }
+    try:
+        func(*ARG_MAP[func])
+    except KeyboardInterrupt:
+        ultraSense.shutdown()
+        driveSys.stop()
+        io.stop()
 
 def explore_turn(driveSys, sensor, direction, graph, location, heading):
     """Executes a turn around an intersection by the robot while updating the 
@@ -108,23 +137,24 @@ def explore(driveSys, sensor, mode):
     graph = None
     prev_loc = (0, 0)
     tool = None
+    djik = None
     while True:
         if act.line_follow(driveSys, sensor) == const.SUCCESS:
+            time.sleep(.2)
             prev_loc = location
             location = (location[0] + const.heading_map[heading][0], 
                         location[1] + const.heading_map[heading][1])
             if graph == None:
-                graph = MapGraph(location, heading)
-                tool = Visualizer(graph)
+                graph, tool, djik = pln.init_plan(location, heading)
             else:
                 graph.driven_connection(prev_loc, location, heading)
             check_end(sensor, graph, location, heading)
-            graph, location, heading = EXPL_MODES[mode](driveSys, sensor, tool, graph, location, heading)
+            graph, location, heading = EXPL_MODES[mode](driveSys, sensor, tool, graph, location, heading, djik)
             if graph.is_complete():
                 complete(graph, tool)
 
 
-def navigate(driveSys, sensor, tool, graph, location, heading):
+def navigate(driveSys, sensor, tool, graph, location, heading, djik):
     """ Assuming the robot is driving on a grid of some sort, executes 
         line following except when intersections are found, in which 
         cases the bot executes alternating left and right turns, 
@@ -169,15 +199,13 @@ def auto_inters(driveSys, sensor, graph, heading, location):
     #If there are undriven streets, turn to them and drive them
     p_head = pln.unx_dir(graph.get_intersection(location))
     if p_head != None:
-        if p_head == 0:
-            return (graph, location, heading, True)
         heading = explore_turn(driveSys, sensor, act.to_head(heading, p_head, graph, location), graph, location, heading)
         return (graph, location, heading, True)
     else:
         return (graph, location, heading, False)
 
 
-def auto_explore(driveSys, sensor, tool, graph, location, heading):
+def auto_explore(driveSys, sensor, tool, graph, location, heading, djik):
     """
     Allows the robot to autonomously explore a maze of roads until 
     it has mapped the entire thing, then display a graphical 
@@ -194,7 +222,7 @@ def auto_explore(driveSys, sensor, tool, graph, location, heading):
         return (graph, location, heading)
 
         
-def auto_djik(driveSys, sensor, tool, graph, location, heading):
+def auto_djik(driveSys, sensor, tool, graph, location, heading, djik):
     """Uses Djikstra's algorithm to intelligently explore the map by taking
     efficient paths to unexplored locations
     """
@@ -260,12 +288,12 @@ def manual_djik(driveSys, sensor):
 
 def herd(driveSys, sensor):
     """ Robot can be guided along a path by obstancle avoidance """
-    last_trigger_time = 0
+    #last_trigger_time = 0
     while True:
-        now = time.time()
-        if now - last_trigger_time > 0.05:
-            sensor.trigger()
-            last_trigger_time = time.time()
+        #now = time.time()
+        #if now - last_trigger_time > 0.05:
+            #sensor.trigger()
+            #last_trigger_time = time.time()
         reading = sensor.read()
         threshold = 0.2
 
@@ -285,11 +313,14 @@ def herd(driveSys, sensor):
         else:
             driveSys.drive("STRAIGHT")
 
-def wall_follow(driveSys, sensor, wall_loc, correcter):
+
+def wall_follow(driveSys, sensor, correcter):
     """ Robot follows along a wall using ultrasound sensors.
         The side of the wall it is following along must be specified as well
         as a function pointer to handle the drive system error correction """
     # get side of wall it should follow
+    wall_loc = input("Follow a 'LEFT' or 'RIGHT' wall: ").upper()
+
     if wall_loc.upper() != "LEFT" and wall_loc.upper() != "RIGHT":
         raise Exception("Invalid wall location (must be LEFT or RIGHT)")
 
@@ -311,6 +342,7 @@ def wall_follow(driveSys, sensor, wall_loc, correcter):
         # get latest ultrasound reading and calculate error
         reading = sensor.read()[sensor_mappings[wall_loc.upper()]]
         error = reading - target_dist
+        print(reading)
 
         # stop robot if front sensor gets too close to wall
         stop_threshold = const.US_THRESHOLD
@@ -346,7 +378,7 @@ def proportional_wall_follow(driveSys, wall_loc, error):
     prop_const = const.WALL_FOLLOW_PROP
     if wall_loc == "LEFT":
         prop_const *= -1
-    left_speed = const.MODES["STRAIGHT"][None][0] + error * prop_const
-    right_speed = const.MODES["STRAIGHT"][None][1] + error * prop_const
+    left_speed = min(const.MODES["STRAIGHT"][None][0] + error * prop_const, 255)
+    right_speed = max(const.MODES["STRAIGHT"][None][1] + error * prop_const, -255)
     driveSys.pwm(left_speed, right_speed)
 

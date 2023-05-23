@@ -26,7 +26,7 @@ class Djikstra:
         self.goal = graph.get_intersection(origin)
         self.goal.set_cost(0)
         self.q = PriorityQueue()
-        self.q.put((0, origin))
+        self.q.put((0, self.goal))
 
 
     def reset(self, origin):
@@ -40,11 +40,11 @@ class Djikstra:
         self.goal = self.graph.get_intersection(origin)
         self.goal.set_cost(0)
         self.q = PriorityQueue()
-        self.q.put((0, origin))
+        self.q.put((0, self.goal))
 
     def run(self):
         """ Run Djikstra's algorithm on the graph. This will assign a cost and 
-        direction to each Intersewction in the graph stored in these fields 
+        direction to each Intersection in the graph stored in these fields 
         internally in each Intersection object
         """
         while not self.q.empty():
@@ -56,10 +56,10 @@ class Djikstra:
                 pot_cost = curr.get_cost() + 1
                 if pot_cost < chile.get_cost():
                     if chile.get_cost() != float('inf'):
-                        self.q.remove(chile)
+                        self.q.queue.remove((chile.get_cost(), chile))
                     chile.set_cost(pot_cost)
                     chile.set_dir(pot_dir)
-                    self.q.put((node.get_cost(), node))
+                    self.q.put((chile.get_cost(), chile))
 
     def gen_path(self, start_point):
         """ Generates a path from the given start point to the goal node of 
