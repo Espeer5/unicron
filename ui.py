@@ -33,7 +33,7 @@ def get_input_simple():
             print("Invalid command!")
 
 def start_normstorm(func):
-    """Exectues the passed in function in a new thread which controls the 
+    """Executes the passed in function in a new thread which controls the 
     robot.
     """
     robot_thread = threading.Thread(name="RobotThread", \
@@ -66,7 +66,7 @@ def ui_simple(func):
         active = False
         while True:
             prev = active
-            active, running = get_input()
+            active, running = get_input_simple()
             if prev == active:
                 if not running:
                     break
@@ -88,15 +88,17 @@ def ui_simple(func):
 
 
 def cmp_input():
+    # flags: explore, navigate, stepping, step, save, show, quit, clear
     CMD_DICT = {
-        "pause": [True, False, True, False, False, False, False],
-        "explore": [True, False, -1, -1, False, -1, False],
-        "goal": [False, True, -1, -1, False, -1, False],
-        "show": [-1, -1, -1, -1, -1, True, False],
-        "stepping": [-1, -1, True, -1, -1, -1, False],
-        "step": [-1, -1, -1, True, -1, -1, False],
-        "save": [-1, -1, -1, -1, True, -1, False],
-        "quit": [-1, -1, -1, -1, -1, -1, True]
+        "pause": [True, False, True, False, False, False, False, False],
+        "explore": [True, False, -1, -1, False, -1, False, False],
+        "goal": [False, True, -1, -1, False, -1, False, False],
+        "show": [-1, -1, -1, -1, -1, True, False, False],
+        "stepping": [-1, -1, True, -1, -1, -1, False, False],
+        "step": [-1, -1, -1, True, -1, -1, False, False],
+        "save": [-1, -1, -1, -1, True, -1, False, False],
+        "quit": [-1, -1, -1, -1, -1, -1, True, -1],
+        "clear": [-1, -1, -1, -1, -1, -1, False, True],
     }
     while True:
         cmd = input("input command: ").lower()
@@ -108,13 +110,13 @@ def cmp_input():
 def ui_cmp():
     try:
         plan = input("Would you like to load a map? (y/n)").lower()
-        pickle = False
+        map_num = None
         if plan == "y":
-            pickle = True
-        flags = [False for i in range(7)]
+            map_num = input("Which map are you NormStorming on? (Number): ")
+        flags = [False for i in range(8)]
         robot_thread = threading.Thread(name="RobotThread", \
                                  target=master,
-                                 args=[flags, pickle])
+                                 args=[flags, map_num])
         robot_thread.start()
         while True:
             temp = cmp_input()
@@ -122,7 +124,7 @@ def ui_cmp():
                 if temp[i] != -1:
                     flags[i] = temp[i]
             if flags[6] == 1:
-                kill_robot()
+                kill_robot(robot_thread)
                 break
     except KeyboardInterrupt:
         if robot_thread != None:

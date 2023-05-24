@@ -73,12 +73,15 @@ invert_h_map= {(0, 1): 0, (1, 1): 1, (1, 0): 2, (1, -1):3,
 
 #Exploration conditions of each road in an Intersection
 CONDITIONS = ["UNKNOWN", "UNDRIVEN", "NONE", "DRIVEN"]
+STREET_CONDITIONS = ["BLOCKED", "UNBLOCKED"]
 
 #Aliases for individual exploration conditions
 UNK = CONDITIONS[0]
 UND = CONDITIONS[1]
 NNE = CONDITIONS[2]
 DRV = CONDITIONS[3]
+BLK = STREET_CONDITIONS[0]
+UNB = STREET_CONDITIONS[1]
 
 # Ultrasonic and wall-following constants
 WALL_FOLLOW_DIST = 0.3

@@ -10,6 +10,7 @@ from sensing.drivers.ultrasound import Ultrasound
 import constants as const
 import pigpio
 import time
+import sys
 import threading
 
 class ProximitySensor():
@@ -77,7 +78,7 @@ def test():
     while True:
         #Trigger the ultrasounds and wait 50 ms
         sensor.trigger()
-        sleep(.05)
+        time.sleep(.05)
 
         #Read/Report
         reading = sensor.read()

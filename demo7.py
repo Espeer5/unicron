@@ -10,4 +10,4 @@ from behaviors import *
 
 if __name__ == "__main__":
     ui_cmp()
-    #ui(wall_follow)
+    #ui_simple(herd)

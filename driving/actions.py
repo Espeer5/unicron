@@ -138,3 +138,29 @@ def past_end():
     is no road.
     """
     raise Exception("Attempted to drive straight where there is no road")
+
+
+def find_blocked_streets(ultraSense, location, heading, graph):
+    """
+    Search for blocked street ahead only if street ahead exists. Updates the graph
+    and returns a boolean whether it found any blocked streets.
+    """
+
+    # allowable distance until object blocks a street
+    threshold = 0.6
+    if heading % 2 != 0:
+        threshold = 0.8
+
+    next_location = (location[0] + const.heading_map[heading][0],
+                     location[1] + const.heading_map[heading][1])
+    inters = graph.get_intersection(location)
+    if graph.contains(next_location) or inters.get_streets()[heading] == const.UND or \
+        inters.get_streets()[heading] == const.DRV:
+        reading = ultraSense.read()
+        print("reading " + str(reading[1]))
+        if reading[1] <= threshold:
+            graph.block_connection(location, next_location, heading)
+            print("Blocked location @ " + str(location) + " w heading " + str(heading))
+            return True
+    return False
+

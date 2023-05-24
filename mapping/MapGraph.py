@@ -7,7 +7,8 @@ Date: 4/30/23
 """
 
 import os
-from constants import CONDITIONS, UNK, UND, NNE, DRV
+from constants import CONDITIONS, UNK, UND, NNE, DRV, \
+                      STREET_CONDITIONS, BLK, UNB, heading_map
 
 
 class Intersection:
@@ -24,6 +25,7 @@ class Intersection:
         self.cost = float('inf')
         self.direction = None
         self.streets = dict.fromkeys(range(8), UNK)
+        self.blockages = dict.fromkeys(range(8), UNB)
         if heading != None:
             self.streets[(heading + 4) % 8] = DRV
 
@@ -48,6 +50,22 @@ class Intersection:
     def get_streets(self):
         """Return the streets list form an Intersection"""
         return self.streets
+    
+    def set_blockage(self, heading, status):
+        """ Set the blockage status of a street in an intersection.
+
+            Arguments: heading - the direction of the street to set blockage
+                                 status for
+                        status - the label to add describing blockage
+        """
+        if status not in STREET_CONDITIONS:
+            raise Exception("Intersection.set_blockage: Invalid status")
+        else:
+            self.blockages[heading] = status
+
+    def get_blockages(self):
+        """Return the blockages list from an Intersection"""
+        return self.blockages
 
     def reset(self):
         """Reset the cost of an Intersection to infinity and the optimal leaving 
@@ -87,6 +105,14 @@ class Intersection:
         intersection
         """
         return self.streets[heading]
+    
+    def check_blockage(self, heading):
+        """returns the status of a block street at a certain heading"""
+        return self.blockages[heading]
+    
+    def clear_blockages(self):
+        """ marks all streets as unblocked """
+        self.blockages = dict.fromkeys(range(8), UNB)
 
     def is_explored(self):
         """
@@ -148,6 +174,26 @@ class MapGraph:
         if inters not in self.graph[prev_inters]:
             self.graph[prev_inters].append(inters)
 
+    def block_connection(self, prev_location, location, heading):
+        """
+        Marks the street connecting each intersection as blocked
+
+        Arugments: prev_location: the last visited intersection location
+                   location: the location of the current intersection
+                   heading: the current heading of the bot
+        """
+        prev_inters = self.get_intersection(prev_location)
+        prev_inters.set_blockage(heading, BLK)
+        inters = self.get_intersection(location)
+        if inters == None:
+            inters = Intersection(location, heading)
+            self.graph[inters] = []
+        inters.set_blockage(self.invert_heading(heading), BLK)
+        if prev_inters not in self.graph[inters]:
+            self.graph[inters].append(prev_inters)
+        if inters not in self.graph[prev_inters]:
+            self.graph[prev_inters].append(inters)
+
     def no_connection(self, location, heading):
         """
         Marks that a street doesn't exist in a certain direction for an 
@@ -176,14 +222,20 @@ class MapGraph:
         for i in range(round(angle / 45) - 1):
             heading = (start_head + (dir_map[direction] * i)) % 8
             if inters.check_connection(heading) not in [UNK, NNE]:
-                raise Exception("Expected intersection is missing, aborting")
+                #raise Exception("Expected intersection is missing, aborting")
+                return False
             self.no_connection(location, heading)
         heading = (start_head + dir_map[direction] * (round(angle / 45) - 1)) % 8
         if inters.check_connection(heading) == NNE:
-            raise Exception("Nonexisting road found. Aborting")
+            #raise Exception("Nonexisting road found. Aborting")
+            return False
         if inters.check_connection(heading) != DRV:
             inters.set_connection(heading, UND)
+        return True
 
+    def clear_blockages(self):
+        for inters in self.graph:
+            inters.clear_blockages()
 
     def contains(self, location):
         """
@@ -217,11 +269,22 @@ class MapGraph:
     def neighbors(self, inters):
         """
         Returns the list of adjacent Intersections for a given Intersection 
-        inters in the graph
+        inters in the graph (excluding blocked intersections)
         """
         if inters == None:
             return []
-        return self.graph[inters]
+        
+        unblocked_neighbors = []
+        for chile in self.graph[inters]:
+            loc1 = inters.get_location()
+            loc2 = chile.get_location()
+            relative_loc = (loc2[0] + loc1[0], loc2[1] - loc1[1])
+            heading = [i for i in heading_map if heading_map[i] == relative_loc]
+            if heading != [] and chile.get_blockages()[heading[0]] == UNB:
+                unblocked_neighbors.append(chile)
+        return unblocked_neighbors
+    
+        #return self.graph[inters]
 
     def __iter__(self):
         """

@@ -8,7 +8,7 @@ Date: 5/8/23
 
 from mapping.MapGraph import MapGraph
 from queue import PriorityQueue
-from constants import heading_map, invert_h_map, UND
+from constants import heading_map, invert_h_map, UND, BLK
 from mapping.graphics import Visualizer
 import pickle
 
@@ -28,6 +28,8 @@ class Djikstra:
         self.q = PriorityQueue()
         self.q.put((0, self.goal))
 
+    def get_goal(self):
+        return self.goal.get_location()
 
     def reset(self, origin):
         """Reinitializes the Djikstra object over the given map to use a 
@@ -95,6 +97,7 @@ def find_unexplored(graph, curr):
     nexts = graph.neighbors(inters)
     if len(nexts) != 0:
         for chile in graph.neighbors(inters):
+            print((chile.get_location()))
             if not chile.is_explored():
                 return chile.location
             nxt = find_unexplored(graph, chile)
@@ -104,11 +107,12 @@ def find_unexplored(graph, curr):
         return None
     
 
-def from_pickle():
+def from_pickle(map_num = None):
     """Returns the graph giving the map of a previously explored tape map
     from the stored pickle file of the graph
     """
-    map_num = input("Which map are you NormStorming on? (Number): ")
+    if map_num == None:
+        map_num = input("Which map are you NormStorming on? (Number): ")
     filename = f'pickles/map{map_num}.pickle'
     print(f'Loading the map from {filename}.')
     toRet = None
