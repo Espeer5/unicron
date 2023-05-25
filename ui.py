@@ -92,7 +92,7 @@ def cmp_input():
     CMD_DICT = {
         "pause": [True, False, True, False, False, False, False, False],
         "explore": [True, False, False, True, False, -1, False, False],
-        "goal": [False, True, False, -1, False, -1, False, False],
+        "goal": [False, True, False, False, False, -1, False, False],
         "show": [-1, -1, -1, -1, -1, True, False, False],
         "stepping": [-1, -1, True, -1, -1, -1, False, False],
         "step": [-1, -1, -1, True, -1, -1, False, False],

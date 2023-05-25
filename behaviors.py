@@ -251,11 +251,14 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, dj
         return (path, graph, location, heading)
 
 
-def manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, cmd):
+def manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, cmd, flags):
     """Use Djikstra's algorithm to find the shortest path to a specified
     location in a predetermined map and then follows the path
     """
     if path != []:
+        if len(path) == 1:
+            print("Last leg")
+            flags[8] = None
         path_elem = path.pop()
         direction = act.to_head(heading, path_elem, graph, location)
         while heading != path_elem:
@@ -264,15 +267,9 @@ def manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, cmd):
         time.sleep(.02)
         return (path, heading, graph, location)
     else:
-        if cmd == None:
-            return (path, heading, graph, location)
         dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
-        #cmd = input("Enter new coordinates to drive to: ")
-            #dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
-            #while not graph.contains(dest):
-                #print("Location does not exist!")
-                #dest = input("Enter valid coordinates")
-            # run algorithm and determine best path to travel
+        if cmd == None or dest == location:
+            raise Exception("Norman will not navigate to where he already is >:(")
         djik.reset(dest)
         path = djik.gen_path(location)
         print("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...")
@@ -431,7 +428,7 @@ def master(flags, map_num=None):
                     print("Norman has no map to display >:(")
                 else:
                     tool.show()
-                    
+                
             # if graph != None and graph.get_intersection(location) != None:
             #     print(graph.get_intersection(location).get_streets())
             #     print(graph.get_intersection(location).get_blockages())
@@ -453,10 +450,9 @@ def master(flags, map_num=None):
                     flags[3] = False
                 time.sleep(.2)
                 if flags[1]:
-                    # while flags[8] == None:
-                    #     continue
-                    path, heading, graph, location = manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, flags[8])
-                    #flags[8] = None
+                    while flags[8] == None:
+                        continue
+                    path, heading, graph, location = manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, flags[8], flags)
                     continue
                 if flags[0]:
                     path, graph, location, heading = auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, djik, prev_loc)
