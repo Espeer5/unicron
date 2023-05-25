@@ -453,10 +453,10 @@ def master(flags, map_num=None):
                     flags[3] = False
                 time.sleep(.2)
                 if flags[1]:
-                    while flags[8] == None:
-                        continue
+                    # while flags[8] == None:
+                    #     continue
                     path, heading, graph, location = manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, flags[8])
-                    flags[8] = None
+                    #flags[8] = None
                     continue
                 if flags[0]:
                     path, graph, location, heading = auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, djik, prev_loc)

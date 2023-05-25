@@ -91,7 +91,7 @@ def cmp_input():
     # flags: explore, navigate, stepping, step, save, show, quit, clear
     CMD_DICT = {
         "pause": [True, False, True, False, False, False, False, False],
-        "explore": [True, False, False, -1, False, -1, False, False],
+        "explore": [True, False, False, True, False, -1, False, False],
         "goal": [False, True, False, -1, False, -1, False, False],
         "show": [-1, -1, -1, -1, -1, True, False, False],
         "stepping": [-1, -1, True, -1, -1, -1, False, False],
@@ -120,10 +120,10 @@ def cmp_input():
 
 def ui_cmp():
     try:
-        plan = input("Would you like to load a map? (y/n)").lower()
+        #plan = input("Would you like to load a map? (y/n)").lower()
         map_num = None
-        if plan == "y":
-            map_num = input("Which map are you NormStorming on? (Number): ")
+        # if plan == "y":
+        #     map_num = input("Which map are you NormStorming on? (Number): ")
         flags = [False for i in range(10)]
         robot_thread = threading.Thread(name="RobotThread", \
                                  target=master,
