@@ -31,11 +31,8 @@ def line_follow(driveSys, sensor):
         Ntime = time.time()
         ids.update(time.time())
         if reading == (1, 1, 1) and ids.check(Ntime) and (Ntime - start_time) >= .5:
-            # Drive forward to place wheels on intersection
-            driveSys.drive("STRAIGHT")
-            time.sleep(const.PULLUP_T)
             driveSys.stop()
-            time.sleep(.5)
+            time.sleep(1.2)
             return const.SUCCESS
         lr.update(time.time())
 	    # robot is entirely off the line
@@ -47,6 +44,12 @@ def line_follow(driveSys, sensor):
             driveSys.drive(const.FEEDBACK_TABLE.get(reading)[0], \
 	        const.FEEDBACK_TABLE.get(reading)[1])
 
+
+def pullup(driveSys):
+    driveSys.drive("STRAIGHT")
+    time.sleep(const.PULLUP_T)
+    driveSys.stop()
+    time.sleep(.5)
 
 def to_head(heading, next_h, graph, location):
     """Computes the direction to turn to achieve a certain heading
@@ -156,11 +159,37 @@ def find_blocked_streets(ultraSense, location, heading, graph):
     inters = graph.get_intersection(location)
     if graph.contains(next_location) or inters.get_streets()[heading] == const.UND or \
         inters.get_streets()[heading] == const.DRV:
-        reading = ultraSense.read()
-        print("reading " + str(reading[1]))
-        if reading[1] <= threshold:
+
+        # filter ultrasound readings because the sensors suck
+        readings = []
+        filter_steps = 10
+        for i in range(filter_steps):
+            time.sleep(0.06)
+            readings.append(ultraSense.read())
+        
+        left_sensor_bad = False
+        center_sensor_bad = False
+        right_sensor_bad = False
+
+        for i in range(len(readings)):
+            if readings[i][0] > threshold:
+                left_sensor_bad = True
+            if readings[i][1] > threshold:
+                center_sensor_bad = True
+            if readings[i][2] > threshold:
+                right_sensor_bad = True
+        print([read[0] for read in readings])
+        if not center_sensor_bad:
             graph.block_connection(location, next_location, heading)
             print("Blocked location @ " + str(location) + " w heading " + str(heading))
-            return True
+
+        # ignoring left and right sensors for now because they also suck
+        
+        #if not left_sensor_bad:
+            #graph.block_connection(location, next_location, (heading+2)%8)
+            #print("Blocked location @ " + str(location) + " w heading " + str((heading+2)%8))
+        #if not right_sensor_bad:
+            #graph.block_connection(location, next_location, (heading-2)%8)
+            #print("Blocked location @ " + str(location) + " w heading " + str((heading-2)%8))
     return False
 

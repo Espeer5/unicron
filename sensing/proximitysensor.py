@@ -31,7 +31,7 @@ class ProximitySensor():
                                    const.C_ULTRASOUND_PINS[1]),
                         Ultrasound(io, const.R_ULTRASOUND_PINS[0],
                                    const.R_ULTRASOUND_PINS[1]))
-        print("Starting triggering thread...")
+        #print("Starting triggering thread...")
         self.triggering = True
         self.thread = threading.Thread(name="TriggerThread", target=self.run)
         self.thread.start()

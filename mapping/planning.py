@@ -137,6 +137,6 @@ def init_plan(location, heading):
 def unx_dir(inter):
     """Returns a heading which needs to be explored for a given intersection"""
     for i in range(len(inter.get_streets())):
-        if inter.check_connection(i) == UND:
+        if inter.check_connection(i) == UND and inter.check_blockage != BLK:
             return i
     return None

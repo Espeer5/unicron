@@ -9,5 +9,6 @@ from behaviors import *
 
 
 if __name__ == "__main__":
-    ui_cmp()
-    #ui_simple(herd)
+    #ui_simple(wall_follow) # goals 1 demo
+    ui_cmp() # goals 2 demo
+    

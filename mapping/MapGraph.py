@@ -8,7 +8,8 @@ Date: 4/30/23
 
 import os
 from constants import CONDITIONS, UNK, UND, NNE, DRV, \
-                      STREET_CONDITIONS, BLK, UNB, heading_map
+                      STREET_CONDITIONS, BLK, UNB, invert_h_map
+import pickle
 
 
 class Intersection:
@@ -119,8 +120,10 @@ class Intersection:
         Returns a boolean indicating whether an intersection is fully
         explored, meaning it has no unknown or undriven streets
         """
-        labels = self.streets.values()
-        return UNK not in labels and UND not in labels
+        for heading in range(8):
+            if self.check_connection(heading) not in [DRV, NNE] and self.check_blockage(heading) != BLK:
+                return False
+        return True
 
 
 class MapGraph:
@@ -185,14 +188,8 @@ class MapGraph:
         prev_inters = self.get_intersection(prev_location)
         prev_inters.set_blockage(heading, BLK)
         inters = self.get_intersection(location)
-        if inters == None:
-            inters = Intersection(location, heading)
-            self.graph[inters] = []
-        inters.set_blockage(self.invert_heading(heading), BLK)
-        if prev_inters not in self.graph[inters]:
-            self.graph[inters].append(prev_inters)
-        if inters not in self.graph[prev_inters]:
-            self.graph[prev_inters].append(inters)
+        if inters != None:
+            inters.set_blockage(self.invert_heading(heading), BLK)
 
     def no_connection(self, location, heading):
         """
@@ -222,12 +219,12 @@ class MapGraph:
         for i in range(round(angle / 45) - 1):
             heading = (start_head + (dir_map[direction] * i)) % 8
             if inters.check_connection(heading) not in [UNK, NNE]:
-                #raise Exception("Expected intersection is missing, aborting")
+                raise Exception("Expected intersection is missing, aborting")
                 return False
             self.no_connection(location, heading)
         heading = (start_head + dir_map[direction] * (round(angle / 45) - 1)) % 8
         if inters.check_connection(heading) == NNE:
-            #raise Exception("Nonexisting road found. Aborting")
+            raise Exception("Nonexisting road found. Aborting")
             return False
         if inters.check_connection(heading) != DRV:
             inters.set_connection(heading, UND)
@@ -278,13 +275,11 @@ class MapGraph:
         for chile in self.graph[inters]:
             loc1 = inters.get_location()
             loc2 = chile.get_location()
-            relative_loc = (loc2[0] + loc1[0], loc2[1] - loc1[1])
-            heading = [i for i in heading_map if heading_map[i] == relative_loc]
-            if heading != [] and chile.get_blockages()[heading[0]] == UNB:
+            relative_loc = (loc2[0] - loc1[0], loc2[1] - loc1[1])
+            heading = invert_h_map[relative_loc]
+            if chile.check_blockage(heading) == UNB:
                 unblocked_neighbors.append(chile)
         return unblocked_neighbors
-    
-        #return self.graph[inters]
 
     def __iter__(self):
         """
@@ -294,15 +289,21 @@ class MapGraph:
         return iter(self.graph)
 
 
-def complete(graph, viz):
+def complete(graph, filename=None):
     """If the passed in graph has been fully emplored, saves the map to a
     pickle file specified by the user, informs user the map is complete, and
     exits."""
-    filename = input("Enter a file name to save map to: ")
+    if filename == None:
+        filename = input("Enter a file name to save map to: ")
     with open(filename, 'wb') as filen:
         pickle.dump(graph, filen)
-    print("Map Saved")
-    viz.show()
-    sys.exit(0)
+
+
+def unb_head(graph, location):
+    inter = graph.get_intersection(location)
+    for heading in inter.streets:
+        if inter.check_connection(heading) not in [UNK, NNE] and inter.check_blockage(heading) == UNB:
+            return heading
+    raise Exception("Norman is trapped!")
 
     

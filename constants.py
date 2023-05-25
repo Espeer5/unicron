@@ -5,7 +5,7 @@
 # Date: 4/16/23
 
 #Adjust for the battery charge
-BATT_LIFE = .84
+BATT_LIFE = .91
 
 # GPIO HARDWARE CONNECTIONS
 L_MOTOR_PINS = (7, 8) # left motor pins (A, B)
@@ -56,7 +56,7 @@ dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
 SUCCESS = 1
 
 #How long to pull up for when arriving to an intersection
-PULLUP_T = .42
+PULLUP_T = .475
 
 #The amount of time over which a full power kick is executed initiating a turn
 KICK_TIME = .07

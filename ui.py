@@ -91,8 +91,8 @@ def cmp_input():
     # flags: explore, navigate, stepping, step, save, show, quit, clear
     CMD_DICT = {
         "pause": [True, False, True, False, False, False, False, False],
-        "explore": [True, False, -1, -1, False, -1, False, False],
-        "goal": [False, True, -1, -1, False, -1, False, False],
+        "explore": [True, False, False, -1, False, -1, False, False],
+        "goal": [False, True, False, -1, False, -1, False, False],
         "show": [-1, -1, -1, -1, -1, True, False, False],
         "stepping": [-1, -1, True, -1, -1, -1, False, False],
         "step": [-1, -1, -1, True, -1, -1, False, False],
@@ -103,7 +103,18 @@ def cmp_input():
     while True:
         cmd = input("input command: ").lower()
         if cmd in CMD_DICT:
-            return CMD_DICT[cmd]
+            sigs = CMD_DICT[cmd]
+            if cmd == "goal":
+                goal = input("Input a location to drive to: ")
+                sigs.append(goal)
+            else:
+                sigs.append(None)
+            if cmd == "save":
+                filen = input("Enter a filename to save to")
+                sigs.append(filen)
+            else:
+                sigs.append(None)
+            return sigs
         else:
             print("Invalid command")
 
@@ -113,7 +124,7 @@ def ui_cmp():
         map_num = None
         if plan == "y":
             map_num = input("Which map are you NormStorming on? (Number): ")
-        flags = [False for i in range(8)]
+        flags = [False for i in range(10)]
         robot_thread = threading.Thread(name="RobotThread", \
                                  target=master,
                                  args=[flags, map_num])
