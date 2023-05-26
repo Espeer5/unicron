@@ -63,7 +63,7 @@ def explore_turn(driveSys, IRSensor, direction, graph, location, heading, ultraS
     print("angle: " + str(ang))
     graph.markoff(location, ang, heading, direction[0])
     heading = (heading + const.dirMap[direction[0]][1] * ang / 45) % 8
-    # act.find_blocked_streets(ultraSense, location, heading, graph)
+    act.find_blocked_streets(ultraSense, location, heading, graph)
     return heading
 
 
@@ -441,7 +441,7 @@ def master(flags, map_num=None):
                     graph, tool, djik = pln.init_plan(location, heading)
                 else:
                     graph.driven_connection(prev_loc, location, heading)
-                # act.find_blocked_streets(ultraSense, location, heading, graph)
+                act.find_blocked_streets(ultraSense, location, heading, graph)
                 act.pullup(driveSys)
                 check_end(IRSensor, graph, location, heading)
                 if flags[2]:

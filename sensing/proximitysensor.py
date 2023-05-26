@@ -34,13 +34,16 @@ class ProximitySensor():
         #print("Starting triggering thread...")
         self.triggering = True
         self.thread = threading.Thread(name="TriggerThread", target=self.run)
+        self.channel = 0
         self.thread.start()
         time.sleep(0.1) # Wait for the first measurements to arrive
+        
 
     def trigger(self):
         """ triggers all ultrasound sensors """
-        for i in range(len(self.sensors)):
-            self.sensors[i].trigger()
+        self.channel = (self.channel + 1) % 3
+        #for i in range(len(self.sensors)):
+        self.sensors[self.channel].trigger()
 
     def run(self):
         while self.triggering:
@@ -74,12 +77,19 @@ def test():
     print("GPIO ready...")
     
     # Create objects
+    
     sensor = ProximitySensor(io)
-    while True:
-        #Trigger the ultrasounds and wait 50 ms
-        sensor.trigger()
-        time.sleep(.05)
 
-        #Read/Report
-        reading = sensor.read()
-        print("Distances = (%6.3f, %6.3f, %6.3f)" % reading)
+    try:
+        while True:
+            #Trigger the ultrasounds and wait 50 ms
+            #sensor.trigger()
+            time.sleep(.08)
+
+            #Read/Report
+            reading = sensor.read()
+            print("Distances = (%6.3f, %6.3f, %6.3f)" % reading)
+    except BaseException as e:
+        print("exiting...")
+    sensor.shutdown()
+    io.stop()

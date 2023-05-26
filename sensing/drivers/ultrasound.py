@@ -7,7 +7,7 @@ Date: 5/13/2023
 """
 
 import pigpio
-from time import sleep
+import time
 
 class Ultrasound():
     """ An object oriented interface for reading and calculating data from an
@@ -34,12 +34,19 @@ class Ultrasound():
         self.risetick = 0
         self.last_dt = 0
         self.last_dist = 0
+        self.last_trigger = 0
 
     def trigger(self):
         """ pulls the trigger pin high for 10 microseconds """
-        self.io.write(self.pintrig, 1)
-        sleep(0.000010)
-        self.io.write(self.pintrig, 0)
+        if time.time() - self.last_trigger < 0.05:
+            print("trigger bad!")
+            return
+        # self.io.write(self.pintrig, 1)
+        # time.sleep(0.000010)
+        # self.io.write(self.pintrig, 0)
+        self.io.gpio_trigger(self.pintrig, 15, 1)
+        self.last_trigger = time.time()
+
 
     def rising(self, pin, level, ticks):
         """ stores time of last rising edge of echo pin """
