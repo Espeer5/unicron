@@ -41,9 +41,6 @@ class Ultrasound():
         if time.time() - self.last_trigger < 0.05:
             print("trigger bad!")
             return
-        # self.io.write(self.pintrig, 1)
-        # time.sleep(0.000010)
-        # self.io.write(self.pintrig, 0)
         self.io.gpio_trigger(self.pintrig, 15, 1)
         self.last_trigger = time.time()
 

@@ -77,13 +77,11 @@ def test():
     print("GPIO ready...")
     
     # Create objects
-    
     sensor = ProximitySensor(io)
 
     try:
         while True:
-            #Trigger the ultrasounds and wait 50 ms
-            #sensor.trigger()
+            # Trigger the ultrasounds and wait 50 ms
             time.sleep(.08)
 
             #Read/Report

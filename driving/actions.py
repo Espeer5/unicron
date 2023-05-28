@@ -7,32 +7,47 @@ Date: 5/8/23
 """
 
 from sensing.filters import InterDetector, LRDetector, NextRoadDetector
+from mapping.graphics import Visualizer
 import constants as const
 import time
 
-def line_follow(driveSys, sensor):
+def line_follow(driveSys, IRSense, ultraSense, tool):
     """ This behavior of the robot causes the bot to begin following a 
         tape line on the ground, filtering the signal to avoid noise 
-        as necessary.
+        as necessary. It returns SUCCESS if a line if successfully followed,
+        but it will stop the robot return FAILURE if an object is detected
+        in the robots path
 
         Inputs: driveSys: a DriveSystem object for motor control
-                sensor: a LineSensor object to be filtered for line
+                IRSense: a LineSensor object to be filtered for line
                         sensing
+                ultraSense: a ProximitySensor to detect object in the
+                            robot's path
+                tool: visualizer to be updated upon successful follow
     """
     LR_DET_RESPONSE = {-1: (driveSys.drive, ["TURN", "LEFT"]),
                         0: (past_end, []),
                         1: (driveSys.drive, ["TURN", "RIGHT"])}
     Ntime = time.time()
-    ids = InterDetector(sensor, const.INTER_T, Ntime)
-    lr = LRDetector(sensor, const.LR_T, Ntime)
+    ids = InterDetector(IRSense, const.INTER_T, Ntime)
+    lr = LRDetector(IRSense, const.LR_T, Ntime)
     start_time = time.time()
+
     while True:
-        reading = sensor.read()
+        # check if obstacle in robot path
+        dist = ultraSense.read()[1]
+        if dist <= const.OBJECT_COLLISION_DIST:
+            driveSys.stop()
+            return const.FAILURE
+        # perform line following based on IR readings
+        reading = IRSense.read()
         Ntime = time.time()
         ids.update(time.time())
         if reading == (1, 1, 1) and ids.check(Ntime) and (Ntime - start_time) >= .5:
             driveSys.stop()
             time.sleep(1.2)
+            if tool != None:
+                tool.show()
             return const.SUCCESS
         lr.update(time.time())
 	    # robot is entirely off the line
@@ -44,8 +59,28 @@ def line_follow(driveSys, sensor):
             driveSys.drive(const.FEEDBACK_TABLE.get(reading)[0], \
 	        const.FEEDBACK_TABLE.get(reading)[1])
 
+def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading):
+    """ This behavior of the robot performs an advacned line follow, however,
+        if detects an object immediately in its path with the ultrasound
+        sensors, it performs a 180 degree U-turn. If it gets stuck on a road
+        for more than 3 U-turns, it will wait until an block blocking the
+        road is removed
+    """
+    num_Uturns = 0
+    while line_follow(driveSys, IRSensor, ultraSense, tool) != const.SUCCESS:
+        heading, location = exec_Uturn(driveSys, IRSensor, location, heading)
+        num_Uturns += 1
+        if num_Uturns >= 2:
+            while ultraSense.read()[1] < 0.35:
+                pass # wait until obstacle is removed
+            num_Uturns = 0
+    prev_loc = location
+    location = (location[0] + const.heading_map[heading][0], 
+                location[1] + const.heading_map[heading][1])
+    return location, prev_loc, heading
 
 def pullup(driveSys):
+    """ Robot drive forward to center itself in an intersection """
     driveSys.drive("STRAIGHT")
     time.sleep(const.PULLUP_T)
     driveSys.stop()
@@ -134,6 +169,24 @@ def exec_turn(driveSys, sensor, direction):
     return calculate_angle(direction, tm)
 
 
+def exec_Uturn(driveSys, IRSensor, location, heading):
+    """
+    A function that executes a 180 degree turn for the robot in the middle of a
+    road. It assumes that the angle turned was 180 degrees regardless of the
+    angle calculated. 
+    """
+    ang = abs(exec_turn(driveSys, IRSensor, "RIGHT"))
+    time.sleep(.2)
+    heading = (heading + 4) % 8  # assume 180 degree angle
+    prev_loc = location
+    if ang != 180:
+        print(ang)
+        print("GASP! The robot read a bad angle!!!")
+        prev_loc = (location[0] + const.heading_map[heading][0], 
+                         location[1] + const.heading_map[heading][1])
+    return heading, prev_loc
+
+
 def past_end():
     """
     A function which can be used as a function pointer which simply raises an 
@@ -162,7 +215,7 @@ def find_blocked_streets(ultraSense, location, heading, graph):
 
         # filter ultrasound readings because the sensors suck
         readings = []
-        filter_steps = 10
+        filter_steps = 5
         for i in range(filter_steps):
             time.sleep(0.06)
             readings.append(ultraSense.read())
@@ -178,18 +231,21 @@ def find_blocked_streets(ultraSense, location, heading, graph):
                 center_sensor_bad = True
             if readings[i][2] > threshold:
                 right_sensor_bad = True
-        print([read[0] for read in readings])
+
         if not center_sensor_bad:
             graph.block_connection(location, next_location, heading)
-            print("Blocked location @ " + str(location) + " w heading " + str(heading))
-
-        # ignoring left and right sensors for now because they also suck
-        
-        #if not left_sensor_bad:
-            #graph.block_connection(location, next_location, (heading+2)%8)
-            #print("Blocked location @ " + str(location) + " w heading " + str((heading+2)%8))
-        #if not right_sensor_bad:
-            #graph.block_connection(location, next_location, (heading-2)%8)
-            #print("Blocked location @ " + str(location) + " w heading " + str((heading-2)%8))
+            #print("\nLeft Sensor Blockage:")
+            #print([reading[0] for reading in readings])
+            print("Blocked location @ " + str(location) + " w heading ")
+        if not left_sensor_bad:
+            graph.block_connection(location, next_location, (heading+2)%8)
+            #print("\nCenter Sensor Blockage:")
+            #print([reading[1] for reading in readings])
+            print("Blocked location @ " + str(location) + " w heading " + str((heading+2)%8))
+        if not right_sensor_bad:
+            graph.block_connection(location, next_location, (heading-2)%8)
+            #print("\nRight Sensor Blockage:")
+            #print([reading[2] for reading in readings])
+            print("Blocked location @ " + str(location) + " w heading " + str((heading-2)%8))
     return False
 

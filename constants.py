@@ -54,6 +54,8 @@ dirMap = {"L":("LEFT", 1), "R": ("RIGHT", -1), "S": "STRAIGHT"}
 
 # An alias for the intersection found exit condition from line follow
 SUCCESS = 1
+FAILURE = 2
+OBJECT_COLLISION_DIST = 0.1
 
 #How long to pull up for when arriving to an intersection
 PULLUP_T = .475

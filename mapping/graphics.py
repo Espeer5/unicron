@@ -68,7 +68,8 @@ class Visualizer:
             else:
                 plt.plot(x[i], y[i], 'bo')
         plt.title("Normstorm Map")
-        plt.show()
+        plt.savefig("map.png")
+        #plt.show()
 
     def create_path(self, start, path):
         """ Takes in a path planned by a Djikstra object and generates the data 
