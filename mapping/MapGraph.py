@@ -187,9 +187,11 @@ class MapGraph:
         """
         prev_inters = self.get_intersection(prev_location)
         prev_inters.set_blockage(heading, BLK)
+        print("Blocking " + str(prev_inters.get_location()) + " w heading " + str(heading))
         inters = self.get_intersection(location)
         if inters != None:
             inters.set_blockage(self.invert_heading(heading), BLK)
+            print("Blocking " + str(inters.get_location()) + " w heading " + str(self.invert_heading(heading)))
 
     def no_connection(self, location, heading):
         """
@@ -300,10 +302,22 @@ def complete(graph, filename=None):
 
 
 def unb_head(graph, location):
+    """ return an unblocked heading """
     inter = graph.get_intersection(location)
     for heading in inter.streets:
         if inter.check_connection(heading) not in [UNK, NNE] and inter.check_blockage(heading) == UNB:
             return heading
-    raise Exception("Norman is trapped!")
+    return None
+    #raise Exception("Norman is trapped!")
 
+def unk_dir(graph, inter, heading):
+    """ returns the direction to turn to find the nearest unknown region """
+    """Determines whether turning left or right is better for exploring"""
+    l_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    r_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    if UNK in l_list:
+        if UNK in r_list:
+            if r_list.index(UNK) < l_list.index(UNK):
+                return "RIGHT"
+    return "LEFT"
     

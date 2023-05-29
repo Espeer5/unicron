@@ -59,7 +59,7 @@ def line_follow(driveSys, IRSense, ultraSense, tool):
             driveSys.drive(const.FEEDBACK_TABLE.get(reading)[0], \
 	        const.FEEDBACK_TABLE.get(reading)[1])
 
-def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading):
+def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, graph):
     """ This behavior of the robot performs an advacned line follow, however,
         if detects an object immediately in its path with the ultrasound
         sensors, it performs a 180 degree U-turn. If it gets stuck on a road
@@ -74,9 +74,15 @@ def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading):
             while ultraSense.read()[1] < 0.35:
                 pass # wait until obstacle is removed
             num_Uturns = 0
+
     prev_loc = location
     location = (location[0] + const.heading_map[heading][0], 
                 location[1] + const.heading_map[heading][1])
+    if graph != None:
+        find_blocked_streets(ultraSense, location, heading, graph)
+
+    if tool != None:
+        tool.show()
     return location, prev_loc, heading
 
 def pullup(driveSys):
@@ -107,6 +113,16 @@ def l_r_unex(inter, heading):
     if const.UND in l_list:
         if const.UND in r_list:
             if r_list.index(const.UND) < l_list.index(const.UND):
+                return "RIGHT"
+    return "LEFT"
+
+def l_r_unb(inter, heading):
+    """Determines whether left or right is better for finding an unblocked intersection"""
+    l_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    r_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    if const.UNB in l_list:
+        if const.UNB in r_list:
+            if r_list.index(const.UNB) < l_list.index(const.UNB):
                 return "RIGHT"
     return "LEFT"
 
@@ -175,6 +191,7 @@ def exec_Uturn(driveSys, IRSensor, location, heading):
     road. It assumes that the angle turned was 180 degrees regardless of the
     angle calculated. 
     """
+    print("Skirrrrrrt! Flipping a U-ey")
     ang = abs(exec_turn(driveSys, IRSensor, "RIGHT"))
     time.sleep(.2)
     heading = (heading + 4) % 8  # assume 180 degree angle
@@ -202,6 +219,8 @@ def find_blocked_streets(ultraSense, location, heading, graph):
     and returns a boolean whether it found any blocked streets.
     """
 
+    time.sleep(1) # der der der
+
     # allowable distance until object blocks a street
     threshold = 0.6
     if heading % 2 != 0:
@@ -209,43 +228,48 @@ def find_blocked_streets(ultraSense, location, heading, graph):
 
     next_location = (location[0] + const.heading_map[heading][0],
                      location[1] + const.heading_map[heading][1])
-    inters = graph.get_intersection(location)
-    if graph.contains(next_location) or inters.get_streets()[heading] == const.UND or \
-        inters.get_streets()[heading] == const.DRV:
 
-        # filter ultrasound readings because the sensors suck
-        readings = []
-        filter_steps = 5
-        for i in range(filter_steps):
-            time.sleep(0.06)
-            readings.append(ultraSense.read())
-        
-        left_sensor_bad = False
-        center_sensor_bad = False
-        right_sensor_bad = False
+    if graph != None:
+        inters = graph.get_intersection(location)
+        if inters != None:
+            if graph.contains(next_location) or inters.get_streets()[heading] == const.UND or \
+                inters.get_streets()[heading] == const.DRV:
 
-        for i in range(len(readings)):
-            if readings[i][0] > threshold:
-                left_sensor_bad = True
-            if readings[i][1] > threshold:
-                center_sensor_bad = True
-            if readings[i][2] > threshold:
-                right_sensor_bad = True
+                # filter ultrasound readings because the sensors suck
+                readings = []
+                filter_steps = 5
+                for i in range(filter_steps):
+                    time.sleep(0.06)
+                    readings.append(ultraSense.read())
+                
+                left_sensor_bad = False
+                center_sensor_bad = False
+                right_sensor_bad = False
 
-        if not center_sensor_bad:
-            graph.block_connection(location, next_location, heading)
-            #print("\nLeft Sensor Blockage:")
-            #print([reading[0] for reading in readings])
-            print("Blocked location @ " + str(location) + " w heading ")
-        if not left_sensor_bad:
-            graph.block_connection(location, next_location, (heading+2)%8)
-            #print("\nCenter Sensor Blockage:")
-            #print([reading[1] for reading in readings])
-            print("Blocked location @ " + str(location) + " w heading " + str((heading+2)%8))
-        if not right_sensor_bad:
-            graph.block_connection(location, next_location, (heading-2)%8)
-            #print("\nRight Sensor Blockage:")
-            #print([reading[2] for reading in readings])
-            print("Blocked location @ " + str(location) + " w heading " + str((heading-2)%8))
-    return False
+                for i in range(len(readings)):
+                    if readings[i][0] > threshold:
+                        left_sensor_bad = True
+                    if readings[i][1] > threshold:
+                        center_sensor_bad = True
+                    if readings[i][2] > threshold:
+                        right_sensor_bad = True
+
+                if not left_sensor_bad:
+                    if graph.get_intersection(location).get_blockages()[(heading+2)%8] != const.BLK:
+                        next_location = (location[0] + const.heading_map[(heading+2)%8][0],
+                                         location[1] + const.heading_map[(heading+2)%8][1])
+                        graph.block_connection(location, next_location, (heading+2)%8)
+                if not center_sensor_bad:
+                    if graph.get_intersection(location).get_blockages()[heading] != const.BLK:
+                        next_location = (location[0] + const.heading_map[heading][0],
+                                         location[1] + const.heading_map[heading][1])
+                        graph.block_connection(location, next_location, heading)
+                if not right_sensor_bad:  
+                    if graph.get_intersection(location).get_blockages()[(heading-2)%8] != const.BLK:
+                        next_location = (location[0] + const.heading_map[(heading-2)%8][0],
+                                         location[1] + const.heading_map[(heading-2)%8][1])
+                        graph.block_connection(location, next_location, (heading-2)%8)
+
+                print("after @ " + str(location))
+                print(graph.get_intersection(location).get_blockages())
 

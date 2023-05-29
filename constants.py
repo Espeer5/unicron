@@ -22,7 +22,7 @@ PWM_FREQ = 1000 # PWM frequency for motor control
 #PWM Settings for each motor for each type of motion (l, r)
 #Due to hardware inconsistencies, these had to be fine tuned
 #and determined experimentally
-MODES = {"STRAIGHT": {None: (200, -225), "LEFT": (200, -225),
+MODES = {"STRAIGHT": {None: (200, -220), "LEFT": (200, -225),
         "RIGHT": (200, -225)},
             "VEER": {"LEFT": (159, -225), "RIGHT": (205, -193)},
             "STEER": {"LEFT": (148, -225), "RIGHT": (205, -180)},

@@ -42,7 +42,6 @@ class ProximitySensor():
     def trigger(self):
         """ triggers all ultrasound sensors """
         self.channel = (self.channel + 1) % 3
-        #for i in range(len(self.sensors)):
         self.sensors[self.channel].trigger()
 
     def run(self):

@@ -12,7 +12,7 @@ Date: 4/24/23
 import time
 import pigpio
 from mapping.MapGraph import MapGraph
-from mapping.MapGraph import complete, unb_head
+from mapping.MapGraph import complete, unb_head, unk_dir
 from mapping.graphics import Visualizer
 import sys
 import random
@@ -36,7 +36,8 @@ def explore_turn(driveSys, IRSensor, ultraSense, direction, graph, location, hea
     print("angle: " + str(ang))
     graph.markoff(location, ang, heading, direction[0])
     heading = (heading + const.dirMap[direction[0]][1] * ang / 45) % 8
-    act.find_blocked_streets(ultraSense, location, heading, graph)
+    if graph != None:
+         act.find_blocked_streets(ultraSense, location, heading, graph)
     return heading
 
 
@@ -107,11 +108,11 @@ def auto_inters(driveSys, sensor, graph, heading, location, ultraSense):
     return (graph, location, heading, False)
 
         
-def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, djik, prev_loc):
+def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, djik, prev_loc, explorable):
     """Uses Djikstra's algorithm to intelligently explore the map by taking
     efficient paths to unexplored locations
     """
-    if path != []:
+    if path != [] and explorable:
         path_elem = path.pop()
         direction = act.to_head(heading, path_elem, graph, location)
         while heading != path_elem:
@@ -119,34 +120,36 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, dj
             heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
         time.sleep(.02)
         return (path, graph, location, heading)
-    graph, location, heading, explored = auto_inters(driveSys, IRSensor, graph, heading, location, ultraSense)
-    print(explored)
-    if explored:
-        return (path, graph, location, heading)
-    else:
-        #Otherwise, use Djikstra to find an efficient path to an unexplored location
-        dest = pln.find_unexplored(graph, location)
-        if dest == None:
-            direc = pln.unx_dir(graph.get_intersection(location))
-            if direc == None:
-                direc = unb_head(graph, location)
-            while heading != direc:
-                heading = explore_turn(driveSys, IRSensor, ultraSense, act.to_head(heading, direc, graph, location), graph, location, heading)
+    
+    if explorable:
+        graph, location, heading, explored = auto_inters(driveSys, IRSensor, graph, heading, location, ultraSense)
+        if explored and explorable:
             return (path, graph, location, heading)
-        djik.reset(dest)
-        path = djik.gen_path(location)
-        if path == []:
+        
+    print("running dijk...")
+    #Otherwise, use Djikstra to find an efficient path to an unexplored location
+    dest = pln.find_unexplored(graph, location)
+    if dest == None:
+        direc = pln.unx_dir(graph.get_intersection(location))
+        if direc == None:
             direc = unb_head(graph, location)
-            while heading != direc:
-                heading = explore_turn(driveSys, IRSensor, ultraSense, act.to_head(heading, direc, graph, location), graph, location, heading)
-            return (path, graph, location, heading)
-        path_elem = path.pop()
-        direction = act.to_head(heading, path_elem, graph, location)
-        while heading != path_elem:
-            angle = abs(act.exec_turn(driveSys, IRSensor, direction))
-            heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
-        time.sleep(.02)
+        while heading != direc:
+            heading = explore_turn(driveSys, IRSensor, ultraSense, act.to_head(heading, direc, graph, location), graph, location, heading)
         return (path, graph, location, heading)
+    djik.reset(dest)
+    path = djik.gen_path(location)
+    if path == []:
+        direc = unb_head(graph, location)
+        while heading != direc:
+            heading = explore_turn(driveSys, IRSensor, ultraSense, act.to_head(heading, direc, graph, location), graph, location, heading)
+        return (path, graph, location, heading)
+    path_elem = path.pop()
+    direction = act.to_head(heading, path_elem, graph, location)
+    while heading != path_elem:
+        angle = abs(act.exec_turn(driveSys, IRSensor, direction))
+        heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
+    time.sleep(.02)
+    return (path, graph, location, heading)
 
 
 def manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, cmd, flags):
@@ -212,6 +215,8 @@ def master(flags, map_num=None):
     if graph != None:
         djik = Djikstra(graph, (0, 0))
     path = []
+    explorable = True
+
     try:
         while True:
             if flags[6]:
@@ -228,8 +233,28 @@ def master(flags, map_num=None):
                 else:
                     tool.show()
             
-            # line follow with live obstacle detection
-            location, prev_loc, heading = act.adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading)
+
+            if graph != None:
+                #print(graph.get_intersection((0,1)).get_blockages())
+
+                if graph.get_intersection(location).get_blockages()[heading] != const.BLK:
+                    location, prev_loc, heading = act.adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, graph)
+                    act.pullup(driveSys)
+                else:
+                    print("Robot Status: Heading " + str(heading) + " at Location " + str(location))
+                    # print(graph.get_intersection(location).get_blockages())
+                    print("FACING BLOCKAGE")
+                    explorable = False
+                    path = []
+                    djik.reset(djik.get_goal())
+            else:
+                location, prev_loc, heading = act.adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, graph)
+                act.pullup(driveSys)
+            
+            
+            act.find_blocked_streets(ultraSense, location, heading, graph)
+            if graph != None:
+                print(graph.get_intersection((0,1)).get_blockages())
 
             if graph == None:
                 graph, tool, djik = pln.init_plan(location, heading)
@@ -238,12 +263,7 @@ def master(flags, map_num=None):
                 # we can assume no 45 degree roads exist upon approaching intersection
                 graph.no_connection(location, (heading + 3) % 8)
                 graph.no_connection(location, (heading + 5) % 8)
-
-            act.find_blocked_streets(ultraSense, location, heading, graph)
-            act.pullup(driveSys)
             check_end(IRSensor, graph, location, heading)
-
-            print("Robot Status: Heading " + str(heading) + " at Location " + str(location))
 
             if flags[2]:
                 while not flags[3]:
@@ -256,7 +276,7 @@ def master(flags, map_num=None):
                 path, heading, graph, location = manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, flags[8], flags)
                 continue
             if flags[0]:
-                path, graph, location, heading = auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, djik, prev_loc)
+                path, graph, location, heading = auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, djik, prev_loc, explorable)
                 continue
         print("Shutting down")
         ultraSense.shutdown()
