@@ -8,7 +8,7 @@ Date: 5/8/23
 
 from mapping.MapGraph import MapGraph
 from queue import PriorityQueue
-from constants import heading_map, invert_h_map, UND, BLK
+from constants import heading_map, invert_h_map, UND, BLK, UNB
 from mapping.graphics import Visualizer
 import pickle
 
@@ -87,6 +87,8 @@ class Djikstra:
 def find_unexplored(graph, curr):
     """Uses a DFS to find a nearby intersection with unexplored headings, so 
     that Djikstra may then compute a path to that intersection for exploration
+
+    Update: also makes sure intersection returned is not blocked off
     
     Arguments: graph: a MapGraph object to search over 
                curr: the current location of the bot in the graph
@@ -94,16 +96,29 @@ def find_unexplored(graph, curr):
     if curr == None:
         return None
     inters = graph.get_intersection(curr)
+    if inters == None:
+        print("NONE intersection")
+    else:
+        print(inters.get_blockages())
     nexts = graph.neighbors(inters)
     if len(nexts) != 0:
         for chile in graph.neighbors(inters):
-            print((chile.get_location()))
+            #print((chile.get_location()))
             if not chile.is_explored():
-                return chile.location
+                loc2 = inters.get_location()
+                loc1 = chile.get_location()
+                relative_loc = (loc2[0] - loc1[0], loc2[1] - loc1[1])
+                heading = invert_h_map[relative_loc]
+                print(chile.get_blockages())
+                print(chile.check_blockage(heading))
+                if chile.check_blockage(heading) == UNB:
+                    print("next target " + str(chile.location))
+                    return chile.location
             nxt = find_unexplored(graph, chile)
             if nxt != None and nxt != curr:
                 return nxt
     else:
+        print("no target found")
         return None
     
 
@@ -137,6 +152,6 @@ def init_plan(location, heading):
 def unx_dir(inter):
     """Returns a heading which needs to be explored for a given intersection"""
     for i in range(len(inter.get_streets())):
-        if inter.check_connection(i) == UND and inter.check_blockage != BLK:
+        if inter.check_connection(i) == UND and inter.check_blockage(i) != BLK:
             return i
     return None

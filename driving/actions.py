@@ -222,9 +222,9 @@ def find_blocked_streets(ultraSense, location, heading, graph):
     time.sleep(1) # der der der
 
     # allowable distance until object blocks a street
-    threshold = 0.6
+    threshold = 0.5
     if heading % 2 != 0:
-        threshold = 0.8
+        threshold = 0.7
 
     next_location = (location[0] + const.heading_map[heading][0],
                      location[1] + const.heading_map[heading][1])
@@ -269,7 +269,4 @@ def find_blocked_streets(ultraSense, location, heading, graph):
                         next_location = (location[0] + const.heading_map[(heading-2)%8][0],
                                          location[1] + const.heading_map[(heading-2)%8][1])
                         graph.block_connection(location, next_location, (heading-2)%8)
-
-                print("after @ " + str(location))
-                print(graph.get_intersection(location).get_blockages())
 

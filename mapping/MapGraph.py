@@ -252,7 +252,9 @@ class MapGraph:
         """
         for intersection in self.graph:
             if not intersection.is_explored():
-                return False
+                # make an exception to origin (0,0) if its heading 0 is blocked
+                if not intersection.location == (0, 0) or intersection.check_blockage(0) != BLK:
+                    return False
         return len(self.graph) != 0 
 
     def get_intersection(self, location):

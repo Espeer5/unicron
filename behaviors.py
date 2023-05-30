@@ -125,14 +125,19 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, dj
         graph, location, heading, explored = auto_inters(driveSys, IRSensor, graph, heading, location, ultraSense)
         if explored and explorable:
             return (path, graph, location, heading)
-        
-    print("running dijk...")
+         
     #Otherwise, use Djikstra to find an efficient path to an unexplored location
+    print("Recalculating djik algorithm...")
     dest = pln.find_unexplored(graph, location)
     if dest == None:
         direc = pln.unx_dir(graph.get_intersection(location))
+        #if graph.get_intersection(location).check_blockage(direc):
+
+        print("DIREC1 " + str(direc))
         if direc == None:
             direc = unb_head(graph, location)
+            print("DIREC2 " + str(direc))
+
         while heading != direc:
             heading = explore_turn(driveSys, IRSensor, ultraSense, act.to_head(heading, direc, graph, location), graph, location, heading)
         return (path, graph, location, heading)
@@ -232,37 +237,30 @@ def master(flags, map_num=None):
                     print("Norman has no map to display >:(")
                 else:
                     tool.show()
-            
 
             if graph != None:
-                #print(graph.get_intersection((0,1)).get_blockages())
-
                 if graph.get_intersection(location).get_blockages()[heading] != const.BLK:
                     location, prev_loc, heading = act.adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, graph)
                     act.pullup(driveSys)
+                    explorable = True
                 else:
-                    print("Robot Status: Heading " + str(heading) + " at Location " + str(location))
-                    # print(graph.get_intersection(location).get_blockages())
-                    print("FACING BLOCKAGE")
-                    explorable = False
+                    #print("Robot Status: Heading " + str(heading) + " at Location " + str(location))
+                    #explorable = False
                     path = []
-                    djik.reset(djik.get_goal())
+                    #pass
             else:
                 location, prev_loc, heading = act.adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, graph)
+                graph, tool, djik = pln.init_plan(location, heading)
+                print("Normstorm Navigation Enabled")
+                act.find_blocked_streets(ultraSense, location, heading, graph)
                 act.pullup(driveSys)
-            
+                explorable = True
             
             act.find_blocked_streets(ultraSense, location, heading, graph)
-            if graph != None:
-                print(graph.get_intersection((0,1)).get_blockages())
-
-            if graph == None:
-                graph, tool, djik = pln.init_plan(location, heading)
-            else:
-                graph.driven_connection(prev_loc, location, heading)
-                # we can assume no 45 degree roads exist upon approaching intersection
-                graph.no_connection(location, (heading + 3) % 8)
-                graph.no_connection(location, (heading + 5) % 8)
+            graph.driven_connection(prev_loc, location, heading)
+            # we can assume no 45 degree roads exist upon approaching intersection
+            graph.no_connection(location, (heading + 3) % 8)
+            graph.no_connection(location, (heading + 5) % 8)
             check_end(IRSensor, graph, location, heading)
 
             if flags[2]:
@@ -276,7 +274,11 @@ def master(flags, map_num=None):
                 path, heading, graph, location = manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, flags[8], flags)
                 continue
             if flags[0]:
-                path, graph, location, heading = auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, djik, prev_loc, explorable)
+                if graph.is_complete():
+                    print("Map Fully Explored!")
+                    flags = [True, False, True, False, False, False, False, False] # pause
+                else:
+                    path, graph, location, heading = auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, djik, prev_loc, explorable)
                 continue
         print("Shutting down")
         ultraSense.shutdown()

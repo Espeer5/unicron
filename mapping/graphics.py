@@ -8,7 +8,7 @@ Date: 5/2
 """
 
 import matplotlib.pyplot as plt
-from constants import heading_map
+from constants import heading_map, BLK, invert_h_map
 
 class Visualizer:
     """
@@ -43,13 +43,24 @@ class Visualizer:
         """
         x_edges = []
         y_edges = []
+        blockages = []
         for intersection in self.graph:
             start = intersection.get_location()
             for conn in self.graph.get_graph()[intersection]:
                 conn_loc = conn.get_location()
                 x_edges.append([start[0], conn_loc[0]])
                 y_edges.append([start[1], conn_loc[1]])
-        return (x_edges, y_edges)
+                inters1 = self.graph.get_intersection((start[0], start[1]))
+                inters2 = self.graph.get_intersection((conn_loc[0], conn_loc[1]))
+                loc2 = inters1.get_location()
+                loc1 = inters2.get_location()
+                relative_loc = (loc2[0] - loc1[0], loc2[1] - loc1[1])
+                heading = invert_h_map[relative_loc]
+                if inters2.check_blockage(heading) == BLK:
+                    blockages.append(True)
+                else:
+                    blockages.append(False)
+        return (x_edges, y_edges, blockages)
 
     def show(self):
         """
@@ -59,9 +70,12 @@ class Visualizer:
         with all others shown in blue.
         """
         x, y, inter_exp = self.find_intersections()
-        x_edges, y_edges = self.find_edges()
+        x_edges, y_edges, blockages = self.find_edges()
         for i in range(len(x_edges)):
-            plt.plot(x_edges[i], y_edges[i], 'r')
+            if blockages[i]:
+                plt.plot(x_edges[i], y_edges[i], 'y')
+            else:
+                plt.plot(x_edges[i], y_edges[i], 'r')
         for i in range(len(x)):
             if inter_exp[i]:
                 plt.plot(x[i], y[i], 'go')

@@ -129,6 +129,7 @@ def ui_cmp():
                                  target=master,
                                  args=[flags, map_num])
         robot_thread.start()
+        print("WARNING: norman is feeling extra naughty (ง ͠° ͟ʖ ͡°)ง")
         while True:
             temp = cmp_input()
             for i in range(len(flags)):
