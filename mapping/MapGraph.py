@@ -278,18 +278,18 @@ class MapGraph:
             return []
         
         unblocked_neighbors = []
+        loc2 = inters.get_location()
         for chile in self.graph[inters]:
             # loc2 = inters.get_location()
             # loc1 = chile.get_location()
             # relative_loc = (loc2[0] - loc1[0], loc2[1] - loc1[1])
             # heading = invert_h_map[relative_loc]
-            loc2 = inters.get_location()
             loc1 = chile.get_location()
-            relative_loc = (loc2[0] - loc1[0], loc2[1] - loc1[1])
+            relative_loc = (loc1[0] - loc2[0], loc1[1] - loc2[1])
             heading = invert_h_map[relative_loc]
 
             #heading = heading_from(inters.get_location(), chile.get_location())
-            if chile.check_blockage(heading) == UNB:
+            if inters.check_blockage(heading) == UNB:
                 unblocked_neighbors.append(chile)
         return unblocked_neighbors
 

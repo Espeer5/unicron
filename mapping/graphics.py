@@ -129,7 +129,7 @@ class Visualizer:
         for i in range(len(l_x)):
             plt.plot(l_x[i], l_y[i], 'b')
         plt.title("Normstorm Map")
-        plt.show()
+        plt.savefig("map.png")
 
     def exit(self):
         """

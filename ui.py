@@ -90,15 +90,15 @@ def ui_simple(func):
 def cmp_input():
     # flags: explore, navigate, stepping, step, save, show, quit, clear
     CMD_DICT = {
-        "pause": [True, False, True, False, False, False, False, False],
-        "explore": [True, False, False, True, False, -1, False, False],
-        "goal": [False, True, False, False, False, -1, False, False],
-        "show": [-1, -1, -1, -1, -1, True, False, False],
-        "stepping": [-1, -1, True, -1, -1, -1, False, False],
-        "step": [-1, -1, -1, True, -1, -1, False, False],
-        "save": [-1, -1, -1, -1, True, -1, False, False],
-        "quit": [-1, -1, -1, -1, -1, -1, True, -1],
-        "clear": [-1, -1, -1, -1, -1, -1, False, True],
+        "pause": [True, False, True, False, False, False, False, False, False],
+        "explore": [True, False, False, True, False, -1, False, False, False],
+        "goal": [False, True, False, False, False, -1, False, False, False],
+        "show": [-1, -1, -1, -1, -1, True, False, False, False],
+        "stepping": [-1, -1, True, -1, -1, -1, False, False, False],
+        "step": [-1, -1, -1, True, -1, -1, False, False, False],
+        "save": [-1, -1, -1, -1, True, -1, False, False, False],
+        "quit": [-1, -1, -1, -1, -1, -1, True, -1, False],
+        "clear": [-1, -1, -1, -1, -1, -1, False, True, False],
     }
     while True:
         cmd = input("input command: ").lower()
@@ -120,10 +120,7 @@ def cmp_input():
 
 def ui_cmp():
     try:
-        #plan = input("Would you like to load a map? (y/n)").lower()
         map_num = None
-        # if plan == "y":
-        #     map_num = input("Which map are you NormStorming on? (Number): ")
         flags = [False for i in range(10)]
         robot_thread = threading.Thread(name="RobotThread", \
                                  target=master,

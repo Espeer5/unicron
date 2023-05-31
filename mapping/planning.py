@@ -84,10 +84,9 @@ class Djikstra:
         return path
 
 
-def find_unexplored(graph, curr):
+def find_unexplored(graph, curr, seen):
     """Uses a DFS to find a nearby intersection with unexplored headings, so 
     that Djikstra may then compute a path to that intersection for exploration
-
     Update: also makes sure intersection returned is not blocked off
     
     Arguments: graph: a MapGraph object to search over 
@@ -96,46 +95,19 @@ def find_unexplored(graph, curr):
     if curr == None:
         return None
     inters = graph.get_intersection(curr)
-    # if inters == None:
-    #     print("NONE intersection")
-    # else:
-    #     print(inters.get_blockages())
     nexts = graph.neighbors(inters)
-    if len(nexts) != 0:
-        for chile in graph.neighbors(inters):
-            #print((chile.get_location()))
-            if not chile.is_explored():
-                # loc2 = inters.get_location()
-                # loc1 = chile.get_location()
-                # relative_loc = (loc2[0] - loc1[0], loc2[1] - loc1[1])
-                # heading = invert_h_map[relative_loc]
-                #print(str(loc2) + " " + str(loc1) +)
-                #print(chile.get_blockages())
-                #print(chile.check_blockage(heading))
-                heading = heading_from(inters.get_location(), chile.get_location())
-                print("CHILE " + str(chile.get_location()) + " heading" + str(heading))
-                print("block found???  " + chile.check_blockage(heading))
-
-
-                if chile.check_blockage(heading_from(inters.get_location(), chile.get_location())) == UNB:
-                    print("next target " + str(chile.location))
-                    return chile.location
-            nxt = find_unexplored(graph, chile)
+    seen.append(curr)
+    for chile in nexts:
+        if not chile.is_explored():
+            heading = heading_from(inters.get_location(), chile.get_location())
+            if chile.check_blockage(heading_from(inters.get_location(), chile.get_location())) == UNB:
+                print("next target " + str(chile.location))
+                return chile.location
+        if chile.location not in seen:
+            nxt = find_unexplored(graph, chile.location, seen)
             if nxt != None and nxt != curr:
                 return nxt
-    else:
-        #print(str(inters.get_location()) + " HAS NO NIEGHBORSSS")
-        # print("Inter (-1, 1) info:")
-        # print(graph.get_intersection((-1, 1)).get_streets())
-        # print(graph.get_intersection((-1, 1)).get_blockages())
-
-        # print([inter.get_location() for inter in graph.neighbors(graph.get_intersection((-1,1)))])
-        # print([inter.get_location() for inter in graph.neighbors(graph.get_intersection((0,1)))])
-        # print([inter.get_location() for inter in graph.neighbors(graph.get_intersection((0,2)))])
-
-            
-        print("no target found")
-        return None
+    return None
     
 
 def heading_from(loc1, loc2):
