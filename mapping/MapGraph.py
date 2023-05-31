@@ -62,7 +62,10 @@ class Intersection:
         if status not in STREET_CONDITIONS:
             raise Exception("Intersection.set_blockage: Invalid status")
         else:
-            self.blockages[heading] = status
+            if self.blockages[heading] != status:
+                print("Blocking " + str(self.location) + " w heading " + str(heading))
+                self.blockages[heading] = status
+            
 
     def get_blockages(self):
         """Return the blockages list from an Intersection"""
@@ -186,12 +189,11 @@ class MapGraph:
                    heading: the current heading of the bot
         """
         prev_inters = self.get_intersection(prev_location)
-        prev_inters.set_blockage(heading, BLK)
-        print("Blocking " + str(prev_inters.get_location()) + " w heading " + str(heading))
+        if prev_inters != None:
+            prev_inters.set_blockage(heading, BLK)
         inters = self.get_intersection(location)
         if inters != None:
             inters.set_blockage(self.invert_heading(heading), BLK)
-            print("Blocking " + str(inters.get_location()) + " w heading " + str(self.invert_heading(heading)))
 
     def no_connection(self, location, heading):
         """
@@ -277,10 +279,16 @@ class MapGraph:
         
         unblocked_neighbors = []
         for chile in self.graph[inters]:
-            loc1 = inters.get_location()
-            loc2 = chile.get_location()
+            # loc2 = inters.get_location()
+            # loc1 = chile.get_location()
+            # relative_loc = (loc2[0] - loc1[0], loc2[1] - loc1[1])
+            # heading = invert_h_map[relative_loc]
+            loc2 = inters.get_location()
+            loc1 = chile.get_location()
             relative_loc = (loc2[0] - loc1[0], loc2[1] - loc1[1])
             heading = invert_h_map[relative_loc]
+
+            #heading = heading_from(inters.get_location(), chile.get_location())
             if chile.check_blockage(heading) == UNB:
                 unblocked_neighbors.append(chile)
         return unblocked_neighbors

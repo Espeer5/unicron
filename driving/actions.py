@@ -226,47 +226,67 @@ def find_blocked_streets(ultraSense, location, heading, graph):
     if heading % 2 != 0:
         threshold = 0.7
 
-    next_location = (location[0] + const.heading_map[heading][0],
-                     location[1] + const.heading_map[heading][1])
+    
 
     if graph != None:
         inters = graph.get_intersection(location)
         if inters != None:
-            if graph.contains(next_location) or inters.get_streets()[heading] == const.UND or \
-                inters.get_streets()[heading] == const.DRV:
+            # filter ultrasound readings because the sensors suck
+            readings = []
+            filter_steps = 5
+            for i in range(filter_steps):
+                time.sleep(0.06)
+                readings.append(ultraSense.read())
+            
+            left_sensor_bad = False
+            center_sensor_bad = False
+            right_sensor_bad = False
 
-                # filter ultrasound readings because the sensors suck
-                readings = []
-                filter_steps = 5
-                for i in range(filter_steps):
-                    time.sleep(0.06)
-                    readings.append(ultraSense.read())
-                
-                left_sensor_bad = False
-                center_sensor_bad = False
-                right_sensor_bad = False
+            for i in range(len(readings)):
+                if readings[i][0] > threshold:
+                    left_sensor_bad = True
+                if readings[i][1] > threshold:
+                    center_sensor_bad = True
+                if readings[i][2] > threshold:
+                    right_sensor_bad = True
 
-                for i in range(len(readings)):
-                    if readings[i][0] > threshold:
-                        left_sensor_bad = True
-                    if readings[i][1] > threshold:
-                        center_sensor_bad = True
-                    if readings[i][2] > threshold:
-                        right_sensor_bad = True
+            # center sensor
+            next_location = (location[0] + const.heading_map[heading][0],
+                             location[1] + const.heading_map[heading][1])
+            if (graph.contains(next_location) or inters.get_streets()[heading] == const.UND or \
+                inters.get_streets()[heading] == const.DRV) and not center_sensor_bad:
+                graph.block_connection(location, next_location, heading)
 
-                if not left_sensor_bad:
-                    if graph.get_intersection(location).get_blockages()[(heading+2)%8] != const.BLK:
-                        next_location = (location[0] + const.heading_map[(heading+2)%8][0],
-                                         location[1] + const.heading_map[(heading+2)%8][1])
-                        graph.block_connection(location, next_location, (heading+2)%8)
-                if not center_sensor_bad:
-                    if graph.get_intersection(location).get_blockages()[heading] != const.BLK:
-                        next_location = (location[0] + const.heading_map[heading][0],
-                                         location[1] + const.heading_map[heading][1])
-                        graph.block_connection(location, next_location, heading)
-                if not right_sensor_bad:  
-                    if graph.get_intersection(location).get_blockages()[(heading-2)%8] != const.BLK:
-                        next_location = (location[0] + const.heading_map[(heading-2)%8][0],
-                                         location[1] + const.heading_map[(heading-2)%8][1])
-                        graph.block_connection(location, next_location, (heading-2)%8)
+            # left sensor
+            next_location = (location[0] + const.heading_map[(heading+2)%8][0],
+                             location[1] + const.heading_map[(heading+2)%8][1])
+            if (graph.contains(next_location) or inters.get_streets()[(heading+2)%8] == const.UND or \
+                inters.get_streets()[(heading+2)%8] == const.DRV) and not left_sensor_bad:
+                graph.block_connection(location, next_location, (heading+2)%8)
+
+            # right sensor
+            next_location = (location[0] + const.heading_map[(heading-2)%8][0],
+                             location[1] + const.heading_map[(heading-2)%8][1])
+            if (graph.contains(next_location) or inters.get_streets()[(heading-2)%8] == const.UND or \
+                inters.get_streets()[(heading-2)%8] == const.DRV) and not right_sensor_bad:
+                graph.block_connection(location, next_location, (heading-2)%8)
+
+
+            # if graph.contains(next_location) or inters.get_streets()[heading] == const.UND or \
+            #     inters.get_streets()[heading] == const.DRV:
+            #     if not left_sensor_bad:
+            #         if graph.get_intersection(location).get_blockages()[(heading+2)%8] != const.BLK:
+            #             next_location = (location[0] + const.heading_map[(heading+2)%8][0],
+            #                              location[1] + const.heading_map[(heading+2)%8][1])
+            #             graph.block_connection(location, next_location, (heading+2)%8)
+            #     if not center_sensor_bad:
+            #         if graph.get_intersection(location).get_blockages()[heading] != const.BLK:
+            #             next_location = (location[0] + const.heading_map[heading][0],
+            #                              location[1] + const.heading_map[heading][1])
+            #             graph.block_connection(location, next_location, heading)
+            #     if not right_sensor_bad:  
+            #         if graph.get_intersection(location).get_blockages()[(heading-2)%8] != const.BLK:
+            #             next_location = (location[0] + const.heading_map[(heading-2)%8][0],
+            #                              location[1] + const.heading_map[(heading-2)%8][1])
+            #             graph.block_connection(location, next_location, (heading-2)%8)
 

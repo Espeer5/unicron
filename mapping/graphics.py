@@ -52,6 +52,7 @@ class Visualizer:
                 y_edges.append([start[1], conn_loc[1]])
                 inters1 = self.graph.get_intersection((start[0], start[1]))
                 inters2 = self.graph.get_intersection((conn_loc[0], conn_loc[1]))
+                
                 loc2 = inters1.get_location()
                 loc1 = inters2.get_location()
                 relative_loc = (loc2[0] - loc1[0], loc2[1] - loc1[1])
