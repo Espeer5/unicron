@@ -1,7 +1,8 @@
 """
 This module contains the functions responsible for running the terminal
-based user interface for robot control in ME/CS/EE 129 Spring '23
-
+based user interface for robot control in ME/CS/EE 129 Spring '23. Asks users 
+for an input command, then sets a series of shared flags with the robot control 
+thread to initiate the behavior of the robot.
 """
 
 # Authors: Edward Speer, Garrett Knuf
@@ -9,38 +10,7 @@ based user interface for robot control in ME/CS/EE 129 Spring '23
 
 import threading
 import ctypes
-from behaviors import *
-
-def get_input_simple():
-    """
-    This function gets the user input from the terminal and returns the
-    appropriate flags to the main UI loop to indicate what actions should be 
-    executed.
-
-    Returns: (Active, Running), where active indicates if the robot should 
-    be executing behavior, and running indicates whether the program should keep 
-    running or exit
-    """
-    while True:
-        cmd = input("Enter a command: ").lower()
-        if cmd == "run":
-            return (True, True)
-        elif cmd == "stop":
-            return (False, True)
-        if cmd == "quit":
-            return (False, False)
-        else:
-            print("Invalid command!")
-
-def start_normstorm(func):
-    """Executes the passed in function in a new thread which controls the 
-    robot.
-    """
-    robot_thread = threading.Thread(name="RobotThread", \
-                                 target=begin_behavior,
-                                 args=[func])
-    robot_thread.start()
-    return robot_thread
+from behavior.master import *
 
 
 def kill_robot(robot_thread):
@@ -54,37 +24,6 @@ def kill_robot(robot_thread):
     robot_thread.join()
     print("Robot thread returned")
     return None
-
-
-def ui_simple(func):
-    """Takes in input from the user and causes the robot to execute the desired 
-    behavior in a new thread.
-    """
-    robot_thread = None
-    try:
-        running = True 
-        active = False
-        while True:
-            prev = active
-            active, running = get_input_simple()
-            if prev == active:
-                if not running:
-                    break
-                else:
-                    print("Already Normstormin' like that")
-                    continue
-            if not active:
-                robot_thread = kill_robot(robot_thread)
-                if not running:
-                    break
-                continue
-            if active:
-                robot_thread = start_normstorm(func)
-                continue
-    except KeyboardInterrupt:
-        if robot_thread != None:
-            kill_robot(robot_thread)
-    print("Exiting")
 
 
 def cmp_input():
@@ -117,6 +56,7 @@ def cmp_input():
             return sigs
         else:
             print("Invalid command")
+
 
 def ui_cmp():
     try:

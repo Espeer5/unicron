@@ -1,4 +1,4 @@
-"""This module contains the funcitons for individual actions which may be 
+"""This module contains the functions for individual actions which may be 
 completed by the robot in ME/CS/EE 129 Spring '23. These actions may be 
 concatenated together by a behavior function to produce a behavior of the bot
 
@@ -94,42 +94,6 @@ def pullup(driveSys):
     time.sleep(.5)
 
 
-def to_head(heading, next_h, graph, location):
-    """Computes the direction to turn to achieve a certain heading
-
-    Arguments: heading - the current bot heading
-               next_h - the desired next heading of the bot
-    """
-    if (heading + 4) % 8 == next_h:
-        return l_r_unex(graph.get_intersection(location), heading)
-    if  next_h in [(heading + i) % 8 for i in range(5)]:
-        return "LEFT"
-    else: 
-        return "RIGHT"
-
-
-def l_r_unex(inter, heading):
-    """Determines whether turning left or right is better for exploring"""
-    l_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
-    r_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
-    if const.UND in l_list:
-        if const.UND in r_list:
-            if r_list.index(const.UND) < l_list.index(const.UND):
-                return "RIGHT"
-    return "LEFT"
-
-
-def l_r_unb(inter, heading):
-    """Determines whether left or right is better for finding an unblocked intersection"""
-    l_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
-    r_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
-    if const.UNB in l_list:
-        if const.UNB in r_list:
-            if r_list.index(const.UNB) < l_list.index(const.UNB):
-                return "RIGHT"
-    return "LEFT"
-
-
 def calculate_angle(direction, tm):
     """Calculates the approximate angle turned by the robot for turning 
     in the given direction for the given amount of time"""
@@ -222,7 +186,7 @@ def find_blocked_streets(ultraSense, location, heading, graph):
     and returns a boolean whether it found any blocked streets.
     """
 
-    time.sleep(1) # der der der
+    time.sleep(1)
 
     # allowable distance until object blocks a street
     threshold = 0.5
@@ -280,7 +244,7 @@ def center_block(ultraSense, location, heading, graph):
     sensor.
     """
 
-    time.sleep(1) # der der der
+    time.sleep(1)
 
     # allowable distance until object blocks a street
     threshold = 0.5
@@ -296,10 +260,8 @@ def center_block(ultraSense, location, heading, graph):
             for i in range(filter_steps):
                 time.sleep(0.06)
                 readings.append(ultraSense.read())
-            
-            left_sensor_bad = False
+
             center_sensor_bad = False
-            right_sensor_bad = False
 
             for i in range(len(readings)):
                 if readings[i][1] > threshold:

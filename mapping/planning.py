@@ -8,7 +8,7 @@ Date: 5/8/23
 
 from mapping.MapGraph import MapGraph
 from queue import PriorityQueue
-from constants import heading_map, invert_h_map, UND, BLK, UNB
+import constants as const
 from mapping.graphics import Visualizer
 import pickle
 
@@ -54,7 +54,7 @@ class Djikstra:
             for chile in self.graph.neighbors(curr):
                 delta = (curr.get_location()[0] - chile.get_location()[0],
                          curr.get_location()[1] - chile.get_location()[1])
-                pot_dir = invert_h_map[delta]
+                pot_dir = const.invert_h_map[delta]
                 pot_cost = curr.get_cost() + 1
                 if pot_cost < chile.get_cost():
                     if chile.get_cost() != float('inf'):
@@ -78,8 +78,10 @@ class Djikstra:
         node = self.graph.get_intersection(start_point)
         while node.get_dir() != None:
             path.append(node.get_dir())
-            next_n = (node.get_location()[0] + heading_map[node.get_dir()][0],
-                    node.get_location()[1] + heading_map[node.get_dir()][1])
+            next_n = (node.get_location()[0] + 
+                      const.heading_map[node.get_dir()][0], 
+                      node.get_location()[1] + 
+                      const.heading_map[node.get_dir()][1])
             node = self.graph.get_intersection(next_n)
         return path
 
@@ -100,7 +102,7 @@ def find_unexplored(graph, curr, seen):
     for chile in nexts:
         if not chile.is_explored():
             heading = heading_from(inters.get_location(), chile.get_location())
-            if chile.check_blockage(heading_from(inters.get_location(), chile.get_location())) == UNB:
+            if chile.check_blockage(heading) == const.UNB:
                 print("next target " + str(chile.location))
                 return chile.location
         if chile.location not in seen:
@@ -111,8 +113,12 @@ def find_unexplored(graph, curr, seen):
     
 
 def heading_from(loc1, loc2):
+    """ Returns the heading that the robot should drive to go from adjacent 
+    locations 1 to 2.
+    """
     relative_loc = (loc2[0] - loc1[0], loc2[1] - loc1[1])
-    return invert_h_map[relative_loc]
+    return const.invert_h_map[relative_loc]
+
 
 def from_pickle(map_num = None):
     """Returns the graph giving the map of a previously explored tape map
@@ -141,9 +147,48 @@ def init_plan(location, heading):
     return (graph, Visualizer(graph), Djikstra(graph, (0, 0)))
 
 
+def to_head(heading, next_h, graph, location):
+    """Computes the direction to turn to achieve a certain heading
+
+    Arguments: heading - the current bot heading
+               next_h - the desired next heading of the bot
+    """
+    if (heading + 4) % 8 == next_h:
+        return l_r_unex(graph.get_intersection(location), heading)
+    if  next_h in [(heading + i) % 8 for i in range(5)]:
+        return "LEFT"
+    else: 
+        return "RIGHT"
+    
+
 def unx_dir(inter):
     """Returns a heading which needs to be explored for a given intersection"""
     for i in range(len(inter.get_streets())):
-        if inter.check_connection(i) == UND and inter.check_blockage(i) != BLK:
+        if (inter.check_connection(i) == const.UND and 
+            inter.check_blockage(i) != const.BLK):
             return i
     return None
+
+
+def l_r_unex(inter, heading):
+    """Determines whether turning left or right is better for exploring"""
+    l_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    r_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    if const.UND in l_list:
+        if const.UND in r_list:
+            if r_list.index(const.UND) < l_list.index(const.UND):
+                return "RIGHT"
+    return "LEFT"
+
+
+def l_r_unb(inter, heading):
+    """Determines whether left or right is better for finding an unblocked 
+    intersection
+    """
+    l_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    r_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    if const.UNB in l_list:
+        if const.UNB in r_list:
+            if r_list.index(const.UNB) < l_list.index(const.UNB):
+                return "RIGHT"
+    return "LEFT"

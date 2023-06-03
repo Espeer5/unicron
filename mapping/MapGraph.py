@@ -6,7 +6,6 @@ Authors: Edward Speer, Garrett Knuf
 Date: 4/30/23
 """
 
-import os
 from constants import CONDITIONS, UNK, UND, NNE, DRV, \
                       STREET_CONDITIONS, BLK, UNB, invert_h_map
 import pickle
