@@ -29,9 +29,9 @@ def check_head(direction, graph, location, heading, orig_heading):
     inters = graph.get_intersection(location)
     if inters.check_connection(heading) == const.NNE:
         print("Norman can't do math >:| Wrong angle, f***!")
-        increment = const.dirMap[direction][1]
+        increment = const.dirMap[direction[0]][1]
         orig_heading = (orig_heading + increment) % 8
-        while inters.check__connection(orig_heading) == const.NNE:
+        while inters.check_connection(orig_heading) == const.NNE:
             orig_heading = (orig_heading + increment) % 8
         heading = orig_heading
     return heading

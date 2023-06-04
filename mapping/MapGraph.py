@@ -169,6 +169,8 @@ class MapGraph:
                    heading: the current heading of the bot
         """
         prev_inters = self.get_intersection(prev_location)
+        if prev_inters == None:
+            return
         prev_inters.set_connection(heading, DRV)
         inters = self.get_intersection(location)
         if inters == None:
