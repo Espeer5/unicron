@@ -41,10 +41,10 @@ def cmp_input():
     }
     while True:
         cmd = input("input command: ").lower()
-        if cmd in CMD_DICT:
+        if cmd in CMD_DICT or cmd[0:3] == 'goal':
             sigs = CMD_DICT[cmd]
-            if cmd == "goal":
-                goal = input("Input a location to drive to: ")
+            if cmd[:3] == "goal":
+                goal = cmd[5:]
                 sigs.append(goal)
             else:
                 sigs.append(None)

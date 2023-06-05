@@ -26,7 +26,8 @@ def explore_turn(driveSys, IRSensor, ultraSense, direction, graph, location,
     time.sleep(.2)
     orig_head = heading
     heading = (heading + const.dirMap[direction[0]][1] * ang / 45) % 8
-    heading, ang = checks.check_head(direction, graph, location, heading, orig_head, ang)
+    heading, ang = checks.check_head(direction, graph, location, heading, 
+                                     orig_head, ang)
     print("angle: " + str(ang))
     graph.markoff(location, ang, orig_head, direction[0])
     if graph != None:
