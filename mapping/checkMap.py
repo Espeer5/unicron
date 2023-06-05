@@ -9,19 +9,31 @@ Date: 6/3/23
 import constants as const
 
 
-def check_head(direction, graph, location, heading, orig_heading):
+def check_head(direction, graph, location, heading, orig_heading, ang):
     """ Checks to make sure a turned angle was consistent with the map, 
     and if it isn't, corrects the heading to a consistent heading.
     """
     inters = graph.get_intersection(location)
     if inters.check_connection(heading) == const.NNE:
         print("Norman can't do math >:| Wrong angle, f***!")
-        increment = const.dirMap[direction][1]
+        increment = const.dirMap[direction[0]][1]
         orig_heading = (orig_heading + increment) % 8
-        while inters.check__connection(orig_heading) == const.NNE:
+        from_orig = 1
+        while inters.check_connection(orig_heading) == const.NNE:
+            from_orig += 1
             orig_heading = (orig_heading + increment) % 8
         heading = orig_heading
-    return heading
+        ang = from_orig * 45
+        if inters.check_connection(heading) == const.UNK:
+            print(f"Correcting error... am I facing heading {heading}?")
+            if(input().upper() == "N"):
+                print("True Heading: ")
+                heading = int(input())
+                while orig_heading != heading:
+                    orig_heading = (orig_heading + increment) % 8
+                    from_orig += 1
+                ang = from_orig * 45
+    return (heading, ang)
 
 
 def check_end(sensor, graph, location, heading):

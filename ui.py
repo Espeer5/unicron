@@ -61,7 +61,7 @@ def cmp_input():
 def ui_cmp():
     try:
         map_num = None
-        flags = [False for i in range(10)]
+        flags = [False for _ in range(10)]
         robot_thread = threading.Thread(name="RobotThread", \
                                  target=master,
                                  args=[flags, map_num])

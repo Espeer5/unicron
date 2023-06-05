@@ -16,7 +16,8 @@ import mapping.planning as pln
 from mapping.MapGraph import unb_head
 
 
-def explore_turn(driveSys, IRSensor, ultraSense, direction, graph, location, heading):
+def explore_turn(driveSys, IRSensor, ultraSense, direction, graph, location, 
+                 heading):
     """Executes a turn around an intersection by the robot while updating the 
     intersection graph with the observed streets and ensuring self consistency 
     of the graph.
@@ -25,7 +26,7 @@ def explore_turn(driveSys, IRSensor, ultraSense, direction, graph, location, hea
     time.sleep(.2)
     orig_head = heading
     heading = (heading + const.dirMap[direction[0]][1] * ang / 45) % 8
-    heading = checks.check_head(direction, graph, location, heading, orig_head)
+    heading, ang = checks.check_head(direction, graph, location, heading, orig_head, ang)
     print("angle: " + str(ang))
     graph.markoff(location, ang, orig_head, direction[0])
     if graph != None:
@@ -42,14 +43,17 @@ def auto_inters(driveSys, sensor, graph, heading, location, ultraSense):
     r_heads = [(heading - i) % 8 for i in range(4)]
     #If there are unkown headings, investigate them
     directi = None
-    if const.UNK in [graph.get_intersection(location).check_connection(head) for head in l_heads]:
+    if const.UNK in [graph.get_intersection(location).check_connection(head) 
+                     for head in l_heads]:
         directi = "LEFT"
-    elif const.UNK in [graph.get_intersection(location).check_connection(head) for head in r_heads]:
+    elif const.UNK in [graph.get_intersection(location).check_connection(head) 
+                       for head in r_heads]:
         directi = "RIGHT"
     if directi != None:
         orig_heading = heading
         while heading != (orig_heading + 4) % 8:
-            heading = explore_turn(driveSys, sensor, ultraSense, directi, graph, location, heading)
+            heading = explore_turn(driveSys, sensor, ultraSense, directi, graph,
+                                    location, heading)
         return (graph, location, heading, True)
 
     #If there are undriven streets, turn to them and drive them
@@ -57,12 +61,16 @@ def auto_inters(driveSys, sensor, graph, heading, location, ultraSense):
     if p_head != None:
         if graph.get_intersection(location).check_blockage(p_head) == const.UNB:
             while heading != p_head:
-                heading = explore_turn(driveSys, sensor, ultraSense, act.to_head(heading, p_head, graph, location), graph, location, heading)
+                heading = explore_turn(driveSys, sensor, ultraSense, 
+                                       pln.to_head(heading, p_head, graph, 
+                                                   location), 
+                                                   graph, location, heading)
             return (graph, location, heading, True)
     return (graph, location, heading, False)
 
         
-def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, djik, prev_loc):
+def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, 
+              djik, prev_loc):
     """Uses Djikstra's algorithm to intelligently explore the map by taking
     efficient paths to unexplored locations
     """
@@ -70,7 +78,7 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, dj
 
     if path != [] and explorable:
         path_elem = path.pop(0)
-        direction = act.to_head(heading, path_elem, graph, location)
+        direction = pln.to_head(heading, path_elem, graph, location)
         while heading != path_elem:
             angle = abs(act.exec_turn(driveSys, IRSensor, direction))
             heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
@@ -108,7 +116,7 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, dj
                                      graph, location, heading)
         return (path, graph, location, heading)
     path_elem = path.pop(0)
-    direction = act.to_head(heading, path_elem, graph, location)
+    direction = pln.to_head(heading, path_elem, graph, location)
     while heading != path_elem:
         angle = abs(act.exec_turn(driveSys, IRSensor, direction))
         heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8

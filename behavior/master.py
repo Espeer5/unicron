@@ -25,7 +25,7 @@ from mapping.planning import Djikstra
 import mapping.planning as pln
 from sensing.proximitysensor import ProximitySensor
 import mapping.checkMap as checks
-from decision import *
+from behavior.decision import *
 
 
 def end(ultraSense, driveSys, io):

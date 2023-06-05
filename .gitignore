@@ -1,3 +1,4 @@
+*.pickle
 *.png
 __pychache__
 deprecated/

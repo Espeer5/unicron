@@ -225,12 +225,10 @@ class MapGraph:
             heading = (start_head + (dir_map[direction] * i)) % 8
             if inters.check_connection(heading) not in [UNK, NNE]:
                 raise Exception("Expected intersection is missing, aborting")
-                return False
             self.no_connection(location, heading)
         heading = (start_head + dir_map[direction] * (round(angle / 45) - 1)) % 8
         if inters.check_connection(heading) == NNE:
             raise Exception("Nonexisting road found. Aborting")
-            return False
         if inters.check_connection(heading) != DRV:
             inters.set_connection(heading, UND)
         return True
@@ -321,6 +319,7 @@ def unb_head(graph, location):
     return None
     #raise Exception("Norman is trapped!")
 
+
 def unk_dir(graph, inter, heading):
     """ returns the direction to turn to find the nearest unknown region """
     """Determines whether turning left or right is better for exploring"""
@@ -331,4 +330,3 @@ def unk_dir(graph, inter, heading):
             if r_list.index(UNK) < l_list.index(UNK):
                 return "RIGHT"
     return "LEFT"
-    
