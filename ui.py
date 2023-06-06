@@ -11,6 +11,7 @@ thread to initiate the behavior of the robot.
 import threading
 import ctypes
 from behavior.master import *
+import gui
 
 
 def kill_robot(robot_thread):
@@ -26,7 +27,7 @@ def kill_robot(robot_thread):
     return None
 
 
-def cmp_input():
+def cmp_input(entry, out):
     # flags: explore, navigate, stepping, step, save, show, quit, clear
     CMD_DICT = {
         "pause": [True, False, True, False, False, False, False, False, False],
@@ -39,23 +40,25 @@ def cmp_input():
         "quit": [-1, -1, -1, -1, -1, -1, True, -1, False],
         "clear": [-1, -1, -1, -1, -1, -1, False, True, False],
     }
-    while True:
-        cmd = input("input command: ").lower()
-        if cmd in CMD_DICT or cmd[0:3] == 'goal':
-            sigs = CMD_DICT[cmd]
-            if cmd[:3] == "goal":
-                goal = cmd[5:]
-                sigs.append(goal)
-            else:
-                sigs.append(None)
-            if cmd == "save":
-                filen = input("Enter a filename to save to")
-                sigs.append(filen)
-            else:
-                sigs.append(None)
-            return sigs
+    cmd = entry.get().lower()
+    if cmd in CMD_DICT or cmd[0:4] == 'goal':
+        if cmd[0:4] == 'goal':
+            sigs = CMD_DICT[cmd[0:4]]
         else:
-            print("Invalid command")
+            sigs = CMD_DICT[cmd]
+        if cmd[:4] == "goal":
+            goal = cmd[5:]
+            sigs.append(goal)
+        else:
+            sigs.append(None)
+        if cmd == "save":
+            filen = input("Enter a filename to save to")
+            sigs.append(filen)
+        else:
+            sigs.append(None)
+        return sigs
+    else:
+        gui.post("Invalid command", out)
 
 
 def ui_cmp():
@@ -66,7 +69,7 @@ def ui_cmp():
                                  target=master,
                                  args=[flags, map_num])
         robot_thread.start()
-        print("WARNING: norman is feeling extra naughty (ง ͠° ͟ʖ ͡°)ง")
+
         while True:
             temp = cmp_input()
             for i in range(len(flags)):
