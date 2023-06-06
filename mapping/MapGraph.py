@@ -62,9 +62,11 @@ class Intersection:
             raise Exception("Intersection.set_blockage: Invalid status")
         else:
             if self.blockages[heading] != status:
-                print("Blocking " + str(self.location) + " w heading " + str(heading))
+                if status == BLK:
+                    print("Blocking " + str(self.location) + " w heading " + str(heading))
+                else:
+                    print("Unblocking " + str(self.location) + " w heading " + str(heading))
                 self.blockages[heading] = status
-            
 
     def get_blockages(self):
         """Return the blockages list from an Intersection"""
@@ -195,6 +197,22 @@ class MapGraph:
         inters = self.get_intersection(location)
         if inters != None:
             inters.set_blockage(self.invert_heading(heading), BLK)
+
+    def unblock_connection(self, prev_location, location, heading):
+        """
+        Marks the street connecting each intersection as unblocked
+
+        Arugments: prev_location: the last visited intersection location
+                   location: the location of the current intersection
+                   heading: the current heading of the bot
+        """
+        prev_inters = self.get_intersection(prev_location)
+        if prev_inters != None:
+            prev_inters.set_blockage(heading, UNB)
+        inters = self.get_intersection(location)
+        if inters != None:
+            inters.set_blockage(self.invert_heading(heading), UNB)
+
 
     def no_connection(self, location, heading):
         """

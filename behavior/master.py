@@ -84,6 +84,7 @@ def master(flags, map_num=None):
         djik = Djikstra(graph, (0, 0))
     path = []
     active = True
+    just_pulled_up = True
 
     try:
         while True:
@@ -100,7 +101,10 @@ def master(flags, map_num=None):
                     print("Norman has no map to display >:(")
                 else:
                     tool.show_path(location, path)
+
+            
             if graph != None:
+                act.center_block(ultraSense, location, heading, graph)
                 if (graph.get_intersection(location).get_blockages()[heading]
                     != const.BLK and active):
                     location, prev_loc, heading = act.adv_line_follow(driveSys, 
@@ -111,8 +115,29 @@ def master(flags, map_num=None):
                                                                       heading, 
                                                                       graph)
                     act.pullup(driveSys)
+                    just_pulled_up = True
                 else:
+                    print(just_pulled_up)
                     path = []
+
+                    # if not just_pulled_up:
+                    #     # turn to nearest road
+                    #     direc = pln.l_r_nearest_rd(graph.get_intersection(location), heading)
+                    #     ang = act.exec_turn(driveSys, IRSensor, direc)
+                    #     heading = (heading + (ang / 45)) % 8
+                    #     print("heading " + str(heading))
+
+                    #     # do a line follow (it's okay if it U turns here)
+                    #     location, prev_loc, heading = act.adv_line_follow(driveSys, 
+                    #                                                     IRSensor, 
+                    #                                                     ultraSense, 
+                    #                                                     tool, 
+                    #                                                     location, 
+                    #                                                     heading, 
+                    #                                                     graph)
+                    #     act.find_blocked_streets(ultraSense, location, heading, graph)
+                    #     act.pullup(driveSys)
+                    #     just_pulled_up = True
             else:
                 location, prev_loc, heading = act.adv_line_follow(driveSys, 
                                                                   IRSensor, 
@@ -125,6 +150,7 @@ def master(flags, map_num=None):
                 print("Normstorm Navigation Enabled")
                 act.find_blocked_streets(ultraSense, location, heading, graph)
                 act.pullup(driveSys)
+                just_pulled_up = True
             if prev_loc != location:
                 graph.driven_connection(prev_loc, location, heading)
             # we can assume no 45 degree roads exist approaching intersection
@@ -142,6 +168,7 @@ def master(flags, map_num=None):
                     continue
                 path, heading, graph, location, done = manual_djik(driveSys,
                                                                    IRSensor,
+                                                                   ultraSense,
                                                                    path, 
                                                                    heading, 
                                                                    graph, 
@@ -150,12 +177,14 @@ def master(flags, map_num=None):
                                                                    flags[9], 
                                                                    flags)
                 active = not done
+                just_pulled_up = False
                 continue
             elif flags[0]:
                 active = True
                 if graph.is_complete():
-                    print("Map Fully Explored!")
+                    print("Map Fully Explored!")                    
                     active = False
+                    time.sleep(1.5)
                 else:
                     path, graph, location, heading = auto_djik(driveSys, 
                                                                IRSensor, 
@@ -166,6 +195,7 @@ def master(flags, map_num=None):
                                                                heading, 
                                                                djik, 
                                                                prev_loc)
+                    just_pulled_up = False
                 continue
         end(ultraSense, driveSys, io)
     except KeyboardInterrupt:

@@ -75,9 +75,7 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
     """Uses Djikstra's algorithm to intelligently explore the map by taking
     efficient paths to unexplored locations
     """
-    explorable = True
-
-    if path != [] and explorable:
+    if path != []:
         path_elem = path.pop(0)
         direction = pln.to_head(heading, path_elem, graph, location)
         while heading != path_elem:
@@ -86,12 +84,11 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
         time.sleep(.02)
         return (path, graph, location, heading)
     
-    if explorable:
-        graph, location, heading, explored = auto_inters(driveSys, IRSensor, 
+    graph, location, heading, explored = auto_inters(driveSys, IRSensor, 
                                                          graph, heading, 
                                                          location, ultraSense)
-        if explored and explorable:
-            return (path, graph, location, heading)
+    if explored:
+        return (path, graph, location, heading)
          
     #Otherwise, use Djikstra to find an efficient path to an unexplored location
     print("Recalculating djik algorithm...")
@@ -104,7 +101,7 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
 
         while heading != direc:
             heading = explore_turn(driveSys, IRSensor, ultraSense, 
-                                   act.to_head(heading, direc, graph, location),
+                                   pln.to_head(heading, direc, graph, location),
                                      graph, location, heading)
         return (path, graph, location, heading)
     djik.reset(dest)
@@ -113,7 +110,7 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
         direc = unb_head(graph, location)
         while heading != direc:
             heading = explore_turn(driveSys, IRSensor, ultraSense, 
-                                   act.to_head(heading, direc, graph, location),
+                                   pln.to_head(heading, direc, graph, location),
                                      graph, location, heading)
         return (path, graph, location, heading)
     path_elem = path.pop(0)
@@ -125,38 +122,37 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
     return (path, graph, location, heading)
 
 
-def manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, cmd, 
+def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, djik, cmd, 
                 flags):
     """Use Djikstra's algorithm to find the shortest path to a specified
     location in a predetermined map and then follows the path
     """
     done = False
-    if path != []:
-        if len(path) == 1:
-            print("Last leg")
-            flags[8] = True
-        path_elem = path.pop(0)
-        direction = act.to_head(heading, path_elem, graph, location)
-        while heading != path_elem:
-            angle = abs(act.exec_turn(driveSys, IRSensor, direction))
-            heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
-        time.sleep(.02)
-        return (path, heading, graph, location, done)
-    else:
-        dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
-        if dest == location:
-            done = True
-            return (path, heading, graph, location, done) 
-        if cmd == None: # or dest == location:
-            raise Exception("Norman will not navigate to where he already is")
-        djik.reset(dest)
-        path = djik.gen_path(location)
-        print("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...")
-        path_elem = path.pop(0)
-        direction = act.to_head(heading, path_elem, graph, location)
-        while heading != path_elem:
-            angle = abs(act.exec_turn(driveSys, IRSensor, direction))
-            heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
-        time.sleep(.02)
-        return (path, heading, graph, location, done)
+
+    if cmd == None:
+        raise Exception("AHHHHHH cmd is None")
+
+    dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
+    if dest == location:
+        done = True
+        return (path, heading, graph, location, done) 
     
+    djik.reset(dest)
+    path = djik.gen_path(location)
+    if path == []:
+        # TODO: directed explore to unknown goal
+
+        # direc = unb_head(graph, location)
+        # while heading != direc:
+        #     heading = explore_turn(driveSys, IRSensor, ultraSense, 
+        #                         pln.to_head(heading, direc, graph, location),
+        #                             graph, location, heading)
+        raise Exception("Norman has the big stuck")
+        return (path, heading, graph, location, done)
+    path_elem = path.pop(0)
+    direction = pln.to_head(heading, path_elem, graph, location)
+    while heading != path_elem:
+        angle = abs(act.exec_turn(driveSys, IRSensor, direction))
+        heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
+    time.sleep(.02)
+    return (path, heading, graph, location, done)

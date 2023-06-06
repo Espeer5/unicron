@@ -180,6 +180,16 @@ def l_r_unex(inter, heading):
                 return "RIGHT"
     return "LEFT"
 
+def l_r_nearest_rd(inter, heading):
+    """Determines whether turning left or right if better for finding nearest road"""
+    l_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    r_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
+    if const.UND in l_list:
+        if const.UND in r_list:
+            if r_list.index(const.UND) < l_list.index(const.UND):
+                return "LEFT"
+    return "RIGHT"
+
 
 def l_r_unb(inter, heading):
     """Determines whether left or right is better for finding an unblocked 

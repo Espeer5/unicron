@@ -41,18 +41,22 @@ def cmp_input():
     }
     while True:
         cmd = input("input command: ").lower()
-        if cmd in CMD_DICT or cmd[0:3] == 'goal':
+        if cmd in CMD_DICT:
             sigs = CMD_DICT[cmd]
-            if cmd[:3] == "goal":
-                goal = cmd[5:]
-                sigs.append(goal)
-            else:
-                sigs.append(None)
             if cmd == "save":
                 filen = input("Enter a filename to save to")
                 sigs.append(filen)
             else:
                 sigs.append(None)
+            return sigs
+        elif cmd[0:4] == "goal":
+            if len(cmd[5:].split(",")) != 2:
+                print("Invalid goal format")
+            else:
+                sigs = CMD_DICT["goal"]
+                goal = cmd[5:] 
+                print("goal is " + goal)
+                sigs.append(goal)
             return sigs
         else:
             print("Invalid command")

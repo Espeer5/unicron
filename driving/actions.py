@@ -189,9 +189,9 @@ def find_blocked_streets(ultraSense, location, heading, graph):
     time.sleep(1)
 
     # allowable distance until object blocks a street
-    threshold = 0.5
+    threshold = 0.35
     if heading % 2 != 0:
-        threshold = 0.7
+        threshold = 0.6
 
     if graph != None:
         inters = graph.get_intersection(location)
@@ -221,6 +221,8 @@ def find_blocked_streets(ultraSense, location, heading, graph):
             if (graph.contains(next_location) or inters.get_streets()[heading] == const.UND or \
                 inters.get_streets()[heading] == const.DRV) and not center_sensor_bad:
                 graph.block_connection(location, next_location, heading)
+            else:
+                graph.unblock_connection(location, next_location, heading)
 
             # left sensor
             next_location = (location[0] + const.heading_map[(heading+2)%8][0],
@@ -228,6 +230,8 @@ def find_blocked_streets(ultraSense, location, heading, graph):
             if (graph.contains(next_location) or inters.get_streets()[(heading+2)%8] == const.UND or \
                 inters.get_streets()[(heading+2)%8] == const.DRV) and not left_sensor_bad:
                 graph.block_connection(location, next_location, (heading+2)%8)
+            else:
+                graph.unblock_connection(location, next_location, (heading+2)%8)
 
             # right sensor
             next_location = (location[0] + const.heading_map[(heading-2)%8][0],
@@ -235,6 +239,8 @@ def find_blocked_streets(ultraSense, location, heading, graph):
             if (graph.contains(next_location) or inters.get_streets()[(heading-2)%8] == const.UND or \
                 inters.get_streets()[(heading-2)%8] == const.DRV) and not right_sensor_bad:
                 graph.block_connection(location, next_location, (heading-2)%8)
+            else:
+                graph.unblock_connection(location, next_location, (heading-2)%8)
 
 
 def center_block(ultraSense, location, heading, graph):
@@ -273,3 +279,5 @@ def center_block(ultraSense, location, heading, graph):
             if (graph.contains(next_location) or inters.get_streets()[heading] == const.UND or \
                 inters.get_streets()[heading] == const.DRV) and not center_sensor_bad:
                 graph.block_connection(location, next_location, heading)
+            else:
+                graph.unblock_connection(location, next_location, heading)
