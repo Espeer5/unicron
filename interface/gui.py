@@ -10,7 +10,6 @@ Date: 6/6/23
 
 import tkinter as tk
 from PIL import ImageTk, Image
-import textwrap
 import threading
 import ctypes
 from behavior.master import *
@@ -18,10 +17,10 @@ from interface.ui_util import *
 
 #GUI Window size
 X_SIZE = 950
-Y_SIZE = 800
+Y_SIZE = 680
 
 #Maximum number of posted messages saved in the GUI at a time
-MESSAGE_MEM = 10
+MESSAGE_MEM = 6
 
 def run_gui():
     """ Initializes the GUI window and populates it with the features making 
@@ -36,7 +35,9 @@ def run_gui():
     resp_flag = [False]
     
     root = tk.Tk()
+    root.tk_setPalette(background="white")
     root.title("NormStorm Controller")
+    root.configure(bg="white")
     root.geometry(f"{X_SIZE}x{Y_SIZE}")
     root.minsize(X_SIZE, Y_SIZE)
     root.maxsize(X_SIZE, Y_SIZE)
@@ -53,9 +54,12 @@ def run_gui():
 
     map_frame = tk.Frame(root, width=X_SIZE/2)
     map_frame.pack()
-    map_frame.place(anchor='center', relx=.65, y=500)
+    map_frame.place(anchor='center', relx=.75, y=450)
 
-    map = ImageTk.PhotoImage(Image.open("map.png"))
+
+    map = Image.open("map.png")
+    map = map.resize((500, 400))
+    map = ImageTk.PhotoImage(map)
 
     map_label = tk.Label(map_frame, image=map)
     map_label.pack()
@@ -85,11 +89,11 @@ def OSpace(root, messages):
     """
     OFrame = tk.Frame(root, width=X_SIZE/4, height=400)
     OFrame.pack()
-    OFrame.place(anchor='center', relx=.15, y=480)
-    OCanvas = tk.Canvas(OFrame, width=X_SIZE/4, height=400)
-    OCanvas.create_text(100, 30, text="Status Messages", fill="black", 
+    OFrame.place(anchor='center', relx=.2, y=480)
+    OCanvas = tk.Canvas(OFrame, width=X_SIZE/3, height=400)
+    OCanvas.create_text(110, 30, text="Status Messages", fill="black", 
                         font="Times 20 bold underline")
-    text = OCanvas.create_text(100, 50, text=get_messages(messages), 
+    text = OCanvas.create_text(110, 50, text=get_messages(messages), 
                                fill="black", font="Times 15", anchor="n")
     OCanvas.pack()
     return (OCanvas, text)
@@ -99,7 +103,9 @@ def update_gmap(root, label):
     """Updates the map png included in the gui to allow the map to change as 
     the robot explores
     """
-    map = ImageTk.PhotoImage(Image.open("map.png"))
+    map = Image.open("map.png")
+    map = map.resize((500,400))
+    map = ImageTk.PhotoImage(map)
     label.configure(image=map)
     label.image = map
     root.after(1000, lambda: update_gmap(root, label))
@@ -110,7 +116,7 @@ def cmd_entry(root, out, flags, robot_thread):
     commands, and binds it to the funciton which sets the flags shared by the 
     robot thread.
     """
-    cmd_frame = tk.Frame(root, width=X_SIZE/2, height=150)
+    cmd_frame = tk.Frame(root, width=X_SIZE/2, height=150, bg="white")
     cmd_frame.pack
     cmd_frame.place(anchor='center', relx=.5, rely=.25)
     label = tk.Label(cmd_frame, text="Input Command Here", 
@@ -224,4 +230,3 @@ def set_sigs(root, flags, entry, out, robot_thread):
             flags[i] = temp[i]
         if flags[6] == 1:
                 on_close(root, robot_thread)
-    post(f"{flags}", out)

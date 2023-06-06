@@ -7,7 +7,7 @@ Date: 6/6/23
 
 import textwrap
 
-MESSAGE_MEM = 10
+MESSAGE_MEM = 6
 
 
 def post(message, out):
