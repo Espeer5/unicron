@@ -120,7 +120,7 @@ def cmd_entry(root, out, flags, robot_thread):
                      justify='center')
     entry.pack()
     button = tk.Button(cmd_frame, text="Enter Comand", border=2, 
-                       command=lambda: ui.set_sigs(root, flags, entry, out, 
+                       command=lambda: set_sigs(root, flags, entry, out, 
                                                    robot_thread))
     button.pack()
 
