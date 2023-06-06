@@ -31,7 +31,7 @@ def get_messages(messages):
 
 def get_resp(responses, out, resp_flag):
     try:
-        while not resp_flag:
+        while not resp_flag[0]:
             continue
         resp_flag[0] = False
         return responses.pop()
