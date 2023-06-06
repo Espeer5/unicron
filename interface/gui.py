@@ -10,22 +10,31 @@ Date: 6/6/23
 
 import tkinter as tk
 from PIL import ImageTk, Image
-import ui
+import textwrap
+import threading
+import ctypes
+from behavior.master import *
+from interface.ui_util import *
 
 #GUI Window size
 X_SIZE = 950
 Y_SIZE = 800
 
 #Maximum number of posted messages saved in the GUI at a time
-MESSAGE_MEM = 18
+MESSAGE_MEM = 10
 
-def create_root():
+def run_gui():
     """ Initializes the GUI window and populates it with the features making 
     up the control interface. Executes the main loop of the graphics window
     (and hence doesn't return)
     """
+    print("Interface Running...")
     messages = []
+    flags = [False for _ in range(10)]
 
+    responses = []
+    resp_flag = [False]
+    
     root = tk.Tk()
     root.title("NormStorm Controller")
     root.geometry(f"{X_SIZE}x{Y_SIZE}")
@@ -53,14 +62,20 @@ def create_root():
 
     out = OSpace(root, messages)
     outs = (out[0], out[1], messages)
-    cmd_entry(root, outs)
-    resp_entry(root, outs)
 
-    post("WARNING: norman is feeling\nextra naughty (ง ͠° ͟ʖ ͡°)ง", outs)
+    robot_thread = create_rth(flags, outs, responses, resp_flag)
+
+    cmd_entry(root, outs, flags, robot_thread)
+    resp_entry(root, responses, resp_flag)
+
+    post("WARNING: norman is feeling extra naughty (ง ͠° ͟ʖ ͡°)ง", outs)
     
     root.after(1000, lambda: update_gmap(root, map_label))
-
-    root.mainloop()
+    root.protocol("WM_DELETE_WINDOW", lambda: on_close(root, robot_thread))
+    try:
+        root.mainloop()
+    except KeyboardInterrupt:
+        on_close(root, robot_thread)
 
 
 def OSpace(root, messages):
@@ -80,14 +95,6 @@ def OSpace(root, messages):
     return (OCanvas, text)
 
 
-def post(message, out):
-    """Posts the given message to the GUI at the location indicated by the out 
-    array
-    """
-    out[2].append(message)
-    out[0].itemconfig(out[1], text=get_messages(out[2]))
-
-
 def update_gmap(root, label):
     """Updates the map png included in the gui to allow the map to change as 
     the robot explores
@@ -98,19 +105,7 @@ def update_gmap(root, label):
     root.after(1000, lambda: update_gmap(root, label))
 
 
-def get_messages(messages):
-    """ Formats the messages array into a string which may then be displayed in
-    the ouput space of the GUI.
-    """
-    if len(messages) > MESSAGE_MEM:
-        messages = messages[-MESSAGE_MEM:]
-    str = ""
-    for mess in messages:
-        str += f"{mess}\n"
-    return str
-
-
-def cmd_entry(root, out):
+def cmd_entry(root, out, flags, robot_thread):
     """ Creates the entry field in the GUI into which a user may input GUI 
     commands, and binds it to the funciton which sets the flags shared by the 
     robot thread.
@@ -125,11 +120,12 @@ def cmd_entry(root, out):
                      justify='center')
     entry.pack()
     button = tk.Button(cmd_frame, text="Enter Comand", border=2, 
-                       command=lambda: ui.cmp_input(entry, out))
+                       command=lambda: ui.set_sigs(root, flags, entry, out, 
+                                                   robot_thread))
     button.pack()
 
 
-def resp_entry(root, out):
+def resp_entry(root, responses, resp_flag):
     """ Creates the entry field which users may use to respond to any request 
     for data directly from the robot thread (i.e angle correction, filename, 
     etc.)
@@ -143,9 +139,89 @@ def resp_entry(root, out):
     entry = tk.Entry(cmd_frame, width=30, bg='light grey', font="Times 15", 
                      justify='center')
     entry.pack()
-    button = tk.Button(cmd_frame, text="Enter Response", border=2)
+    button = tk.Button(cmd_frame, text="Enter Response", 
+                       command=lambda: send_resp(entry, responses, resp_flag), border=2)
     button.pack()
 
 
-if __name__ == '__main__':
-    create_root()
+def send_resp(entry, responses, resp_flg):
+    responses.append(entry.get)
+    resp_flg[0] = True
+    return
+
+
+def on_close(root, robot_thread):
+    """Defined the behavior which occurs when the gui is closed
+    """
+    kill_robot(robot_thread)
+    root.destroy()
+
+
+def kill_robot(robot_thread):
+    """Upon the command from the UI, stops all robot activities and closes down 
+    threads associated with robot activity.
+    """
+    ctypes.pythonapi.PyThreadState_SetAsyncExc(
+        ctypes.c_long(robot_thread.ident),
+        ctypes.py_object(KeyboardInterrupt))
+    print("Waiting for robot thread to return")
+    robot_thread.join()
+    print("Robot thread returned")
+    return None
+
+
+def cmp_input(entry, out):
+    # flags: explore, navigate, stepping, step, save, show, quit, clear
+    CMD_DICT = {
+        "pause": [True, False, True, False, False, False, False, False, False],
+        "explore": [True, False, False, True, False, -1, False, False, False],
+        "goal": [False, True, False, False, False, -1, False, False, False],
+        "show": [-1, -1, -1, -1, -1, True, False, False, False],
+        "stepping": [-1, -1, True, -1, -1, -1, False, False, False],
+        "step": [-1, -1, -1, True, -1, -1, False, False, False],
+        "save": [-1, -1, -1, -1, True, -1, False, False, False],
+        "quit": [-1, -1, -1, -1, -1, -1, True, -1, False],
+        "clear": [-1, -1, -1, -1, -1, -1, False, True, False],
+    }
+    cmd = entry.get().lower()
+    if cmd in CMD_DICT or cmd[:4] == 'goal' or cmd[:4]=='save':
+        if cmd[:4] == 'goal' or cmd[:4]=='save':
+            sigs = CMD_DICT[cmd[:4]]
+        else:
+            sigs = CMD_DICT[cmd]
+        if cmd[:4] == "goal":
+            goal = cmd[5:]
+            sigs.append(goal)
+        if cmd[:4] == "save":
+            filen = cmd[5:]
+            sigs.append(filen)
+        else:
+            sigs.append(None)
+        return sigs
+    else:
+        post("Invalid command", out)
+
+
+def create_rth(flags, outs, responses, resp_flag, map_num=None):
+    """ Initializes and starts up the robot control thread
+    """
+    robot_thread = threading.Thread(name="RobotThread", \
+                                 target=master,
+                                 args=[flags, outs, responses, resp_flag, map_num])
+    robot_thread.start()
+    return robot_thread
+
+
+def set_sigs(root, flags, entry, out, robot_thread):
+    """ Sets the flags shared between the UI and the robot_thread to be
+    responded to by the robot thread. 
+    """
+    temp = cmp_input(entry, out)
+    if temp == None:
+        return
+    for i in range(len(flags)):
+        if temp[i] != -1:
+            flags[i] = temp[i]
+        if flags[6] == 1:
+                on_close(root, robot_thread)
+    post(f"{flags}", out)

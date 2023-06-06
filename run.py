@@ -6,9 +6,9 @@ which accepts user input to determine the next behavior of the bot.
 # Authors: Edward Speer, Garrett Knuf
 # Date: 6/3/23
 
-from ui import ui_cmp
+import interface.gui as gui
 
 
 if __name__ == "__main__":
-    ui_cmp()
+    gui.run_gui()
     
