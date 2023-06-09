@@ -64,15 +64,15 @@ def master(flags, out, responses, resp_flag, map_num=None):
     IRSensor = LineSensor(io, const.IR_PINS)
     ultraSense = ProximitySensor(io)
     
-    while((flags[0], flags[1]) == (False, False)):
+    while((flags[const.EXP_FLAG], flags[const.GL_FLAG]) == (False, False)):
         time.sleep(2)
         continue
     graph = None
     if map_num != None:
         graph = pln.from_pickle(map_num)
-    if graph == None and flags[1]:
+    if graph == None and flags[const.GL_FLAG]:
         raise Exception("Norman needs a map to navigate >:(")
-    if flags[0] and flags[1]:
+    if flags[const.EXP_FLAG] and flags[const.GL_FLAG]:
         raise Exception("Norman cannot explore and navigate at the same time >:(")
     location = (0, 0)
     heading = 0 
@@ -88,15 +88,15 @@ def master(flags, out, responses, resp_flag, map_num=None):
 
     try:
         while True:
-            if flags[6]:
+            if flags[const.QUIT]:
                 break
-            if flags[7]:
+            if flags[const.CLEAR]:
                 if graph != None:
                     graph.clear_blockages()
-            if flags[4]:
-                complete(graph, flags[9])
-                flags[4] = False
-            if flags[5]:
+            if flags[const.SV_MAP]:
+                complete(graph, flags[const.DATA])
+                flags[const.SV_MAP] = False
+            if flags[const.DISP_MAP]:
                 if tool == None:
                     post("Norman has no map to display >:(", out)
                 else:
@@ -133,13 +133,13 @@ def master(flags, out, responses, resp_flag, map_num=None):
             graph.no_connection(location, (heading + 5) % 8)
             checks.check_end(IRSensor, graph, location, heading)
 
-            if flags[2]:
-                while not flags[3]:
+            if flags[const.STP_FLAG]:
+                while not flags[const.STP]:
                     continue
-                flags[3] = False
+                flags[const.STP] = False
             time.sleep(.2)
-            if flags[1]:
-                while flags[9] == None:
+            if flags[const.GL_FLAG]:
+                while flags[const.DATA] == None:
                     continue
                 path, heading, graph, location, done = manual_djik(driveSys,
                                                                    IRSensor,
@@ -148,13 +148,13 @@ def master(flags, out, responses, resp_flag, map_num=None):
                                                                    graph, 
                                                                    location, 
                                                                    djik, 
-                                                                   flags[9], 
+                                                                   flags[const.DATA], 
                                                                    flags, out, 
                                                                    responses, 
                                                                    resp_flag)
                 active = not done
                 continue
-            elif flags[0]:
+            elif flags[const.EXP_FLAG]:
                 active = True
                 if graph.is_complete():
                     post("Map Fully Explored!", out)

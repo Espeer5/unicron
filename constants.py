@@ -91,3 +91,38 @@ US_DELAY = 0.05
 US_THRESHOLD = 0.1
 WALL_FOLLOW_PROP = 700
 
+# UI Thread constants for Robot Control
+
+# The following lists are the lists of flags to be sent to the robot thread as 
+# control signals from the UI thread to control the robot. The flags are as
+# follow by index:
+# 0: Explore mode active, 1: Goal mode active, 2: Stepping mode active,
+# 3: Take step, 4: Save Map, 5: Display Map, 6: Quit, 7: Clear blockages, 
+# 8: Replan Goal, 9: Data Slot
+# A -1 indicates that a flag will not be affected by a command
+
+# Flag indices
+EXP_FLAG = 0
+GL_FLAG = 1
+STP_FLAG = 2
+STP = 3
+SV_MAP = 4
+DISP_MAP = 5
+QUIT = 6
+CLEAR = 7
+REPLAN = 8
+DATA = 9
+
+
+# Command:Flag mappings
+CMD_DICT = {
+        "pause": [True, False, True, False, False, False, False, False, False],
+        "explore": [True, False, False, True, False, -1, False, False, False],
+        "goal": [False, True, False, False, False, -1, False, False, False],
+        "show": [-1, -1, -1, -1, -1, True, False, False, False],
+        "stepping": [-1, -1, True, -1, -1, -1, False, False, False],
+        "step": [-1, -1, -1, True, -1, -1, False, False, False],
+        "save": [-1, -1, -1, -1, True, -1, False, False, False],
+        "quit": [-1, -1, -1, -1, -1, -1, True, -1, False],
+        "clear": [-1, -1, -1, -1, -1, -1, False, True, False],
+    }

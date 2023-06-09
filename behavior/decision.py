@@ -142,7 +142,7 @@ def manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, cmd,
     if path != []:
         if len(path) == 1:
             post("Driving Last leg", out)
-            flags[8] = True
+            flags[const.REPLAN] = True
         path_elem = path.pop(0)
         direction = act.to_head(heading, path_elem, graph, location)
         while heading != path_elem:
