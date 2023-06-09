@@ -7,15 +7,17 @@ Date: 6/3/23
 """
 
 import constants as const
+from interface.ui_util import post, get_resp
 
 
-def check_head(direction, graph, location, heading, orig_heading, ang):
+def check_head(direction, graph, location, heading, orig_heading, ang, out, 
+               responses, resp_flag):
     """ Checks to make sure a turned angle was consistent with the map, 
     and if it isn't, corrects the heading to a consistent heading.
     """
     inters = graph.get_intersection(location)
     if inters.check_connection(heading) == const.NNE:
-        print("Norman can't do math >:| Wrong angle, f***!")
+        post("Norman can't do math >:| Wrong angle, f***!", out)
         increment = const.dirMap[direction[0]][1]
         orig_heading = (orig_heading + increment) % 8
         from_orig = 1
@@ -25,10 +27,10 @@ def check_head(direction, graph, location, heading, orig_heading, ang):
         heading = orig_heading
         ang = from_orig * 45
         if inters.check_connection(heading) == const.UNK:
-            print(f"Correcting error... am I facing heading {heading}?")
-            if(input().upper() == "N"):
-                print("True Heading: ")
-                heading = int(input())
+            post(f"Correcting error... am I facing heading {heading}?", out)
+            if(get_resp(responses, out, resp_flag).upper() == "N"):
+                post("Input true heading: ", out)
+                heading = int(get_resp(responses, out, resp_flag))
                 while orig_heading != heading:
                     orig_heading = (orig_heading + increment) % 8
                     from_orig += 1

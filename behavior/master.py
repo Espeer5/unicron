@@ -26,6 +26,7 @@ import mapping.planning as pln
 from sensing.proximitysensor import ProximitySensor
 import mapping.checkMap as checks
 from behavior.decision import *
+from interface.ui_util import post
 
 
 def end(ultraSense, driveSys, io):
@@ -43,7 +44,7 @@ def end(ultraSense, driveSys, io):
     io.stop()
   
 
-def master(flags, map_num=None):
+def master(flags, out, responses, resp_flag, map_num=None):
     """ This function interacts with the UI module to allow Norman to execute 
     different behaviors, allowing Norman to switch behaviors in between turns. 
     First executes a line follow, then decides how to turn based on which
@@ -98,7 +99,7 @@ def master(flags, map_num=None):
                 flags[4] = False
             if flags[5]:
                 if tool == None:
-                    print("Norman has no map to display >:(")
+                    post("Norman has no map to display >:(", out)
                 else:
                     tool.show_path(location, path)
 
@@ -147,7 +148,7 @@ def master(flags, map_num=None):
                                                                   heading, 
                                                                   graph)
                 graph, tool, djik = pln.init_plan(location, heading)
-                print("Normstorm Navigation Enabled")
+                post("Normstorm Navigation Enabled", out)
                 act.find_blocked_streets(ultraSense, location, heading, graph)
                 act.pullup(driveSys)
                 just_pulled_up = True
@@ -175,14 +176,16 @@ def master(flags, map_num=None):
                                                                    location, 
                                                                    djik, 
                                                                    flags[9], 
-                                                                   flags)
+                                                                   flags, out, 
+                                                                   responses, 
+                                                                   resp_flag)
                 active = not done
                 just_pulled_up = False
                 continue
             elif flags[0]:
                 active = True
                 if graph.is_complete():
-                    print("Map Fully Explored!")                    
+                    post("Map Fully Explored!", out)
                     active = False
                     time.sleep(1.5)
                 else:
@@ -194,8 +197,7 @@ def master(flags, map_num=None):
                                                                location, 
                                                                heading, 
                                                                djik, 
-                                                               prev_loc)
-                    just_pulled_up = False
+                                                               prev_loc, out)
                 continue
         end(ultraSense, driveSys, io)
     except KeyboardInterrupt:
