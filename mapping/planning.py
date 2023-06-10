@@ -11,7 +11,7 @@ from queue import PriorityQueue
 import constants as const
 from mapping.graphics import Visualizer
 import pickle
-from math import dist
+from math import dist, inf
 from constants import heading_map, UNK, UND
 
 
@@ -217,22 +217,15 @@ def l_r_s_to_target(inter, heading, target):
                 location[1] + heading_map[(heading + 2) % 8][1])
     right_loc = (location[0] + heading_map[(heading - 2) % 8][0],
                  location[1] + heading_map[(heading - 2) % 8][1])
-    
 
-    print(dist(straight_loc, location) < dist(left_loc, location))
-    print(dist(straight_loc, location) < dist(right_loc, location))
-    print(inter.get_streets()[heading] == UND)
-
-    if dist(straight_loc, location) < dist(left_loc, location) and \
-        dist(straight_loc, location) < dist(right_loc, location) and \
+    if dist(straight_loc, target) < dist(left_loc, target) and \
+        dist(straight_loc, target) < dist(right_loc, target) and \
         inter.get_streets()[heading] == UND:
         return "STRAIGHT"
     
     dir_to_target = "LEFT"
-    if dist(location, right_loc) < dist(location, left_loc):
+    if dist(target, right_loc) < dist(target, left_loc):
         dir_to_target = "RIGHT"
-
-    print ("Norman thinks he wants to go to the " + dir_to_target)
 
     # Make sure this direction has unexplored roads
     for i in range(3):
@@ -246,9 +239,55 @@ def l_r_s_to_target(inter, heading, target):
                 return "RIGHT"
 
     # Direction does not have unexplored roads so switch directions
-    print("He changed his mind and is instead going the other way")
-
+    print("Norman changed his mind about direction to turn")
     if dir_to_target == "LEFT":
         return "RIGHT"
     return "LEFT"
+
+def closest_subtarget(graph, location, target, djik):
+    """ Determines the closest subtarget to drive to for directed explore.
+        The closest subtarget is an unexplored intersection with a road
+        that could potentially connect to an intersection with the closest
+        distance to the target """
+    unexp_inters = graph.unexp_inters()
+    if unexp_inters == []:
+        raise ("No unexplored intersections could be found...robot stuck")
+    closest_subtarget = None
+    closest_distance = inf
+    closet_path_len = inf
+    for subtarget in unexp_inters:
+        # get heading the robot will face if it travels to the subtarget
+        djik.reset(dest)
+        path = djik.gen_path(subtarget)
+        subheading = path[-1]
+        # determine distances of adjacent intersections to target
+        # make sure that unexplored streets exist in possible directions
+        straight_loc = (subtarget[0] + heading_map[subheading][0],
+                        subtarget[1] + heading_map[subheading][1])
+        left_loc = (subtarget[0] + heading_map[(subheading + 2) % 8][0],
+                    subtarget[1] + heading_map[(subheading + 2) % 8][1])
+        right_loc = (subtarget[0] + heading_map[(subheading - 2) % 8][0],
+                     subtarget[1] + heading_map[(subheading - 2) % 8][1])
+        streets = graph.get_intersection(location).get_streets()
+        distances = []
+        if (streets[subheading] == UND or streets[subheading] == UNK):
+            distances.append(dist(straight_loc, target))
+        for i in range(1, 4):
+            if (streets[(subheading + 2 + i) % 8] == UND or streets[(subheading + 2 + i) % 8] == UNK):
+                distances.append(dist(left_loc, target))
+                break
+        for i in range(1, 4):
+            if (streets[(subheading - 2 - i) % 8] == UND or streets[(subheading - 2 - i) % 8] == UNK):
+                distances.append(dist(left_loc, target))
+                break
+        # check if there is a new closest option
+        for distance in distances:
+            if distance < closest_distance or (distance == closest_distance and
+               len(path) < closest_path_len):
+                closest_subtarget = subtarget
+                closest_distance = distance
+                closest_path_len = len(path)
+    return closest_subtarget
+
+
     

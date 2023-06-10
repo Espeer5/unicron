@@ -57,10 +57,18 @@ def init_state(out, responses, resp_flag, state):
 
 
 def set_state(state, location, heading):
+    """ Sets the state variable which is shared between the UI, Robot, and 
+    ros threads so that the location determined by the UI and robot threads may 
+    be published via ros.
+    """
     state[0] = location
     state[1] = heading
 
 
 def set_flags_to(flags, target):
+    """ Iterates through the shared flags array setting the flag data at each 
+    index so that the robot may receive commands in the flags array from either 
+    the UI thread or the ROS thread.
+    """
     for i in range(len(flags)):
         flags[i] = target[i]

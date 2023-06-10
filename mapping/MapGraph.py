@@ -255,6 +255,10 @@ class MapGraph:
         return True
 
     def clear_blockages(self):
+        """Removes all of the marked blockages in the map so that now no 
+        blockages are known. This will cause the bot to have to re-explore the
+        map to determine the blockage status of anything undriven.
+        """
         for inters in self.graph:
             inters.clear_blockages()
 
@@ -318,7 +322,6 @@ class MapGraph:
         unexp = []
         for inters in self.graph:
             if not inters.is_explored():
-                print("loc " + str(inters.get_location()))
                 unexp.append(inters.get_location())
         return unexp
 

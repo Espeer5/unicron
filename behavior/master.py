@@ -116,29 +116,24 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
                     set_state(state, location, heading)
                     act.pullup(driveSys)
                     just_pulled_up = True
-                else:
+                elif active:
                     path = []
-
-                    # edge case here
-
-                    # if not just_pulled_up:
-                    #     # turn to nearest road
-                    #     direc = pln.l_r_nearest_rd(graph.get_intersection(location), heading)
-                    #     ang = act.exec_turn(driveSys, IRSensor, direc)
-                    #     heading = (heading + (ang / 45)) % 8
-                    #     print("heading " + str(heading))
-
-                    #     # do a line follow (it's okay if it U turns here)
-                    #     location, prev_loc, heading = act.adv_line_follow(driveSys, 
-                    #                                                     IRSensor, 
-                    #                                                     ultraSense, 
-                    #                                                     tool, 
-                    #                                                     location, 
-                    #                                                     heading, 
-                    #                                                     graph, out)
-                    #     act.find_blocked_streets(ultraSense, location, heading, graph)
-                    #     act.pullup(driveSys)
-                    #     just_pulled_up = True
+                    direction = pln.l_r_nearest_rd(graph.get_intersection(location), heading)
+                    print("Norman cannot drive down blocked road")
+                    heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
+                                graph, location, heading, out, responses,
+                                resp_flag)
+                    location, prev_loc, heading = act.adv_line_follow(driveSys, 
+                                                                      IRSensor, 
+                                                                      ultraSense, 
+                                                                      tool, 
+                                                                      location, 
+                                                                      heading, 
+                                                                      graph, out)
+                    set_state(state, location, heading)
+                    act.pullup(driveSys)
+                    just_pulled_up = True
+                    # Clear blockages????
             else:
                 location, prev_loc, heading = act.adv_line_follow(driveSys, 
                                                                   IRSensor, 

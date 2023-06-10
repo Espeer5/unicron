@@ -140,8 +140,9 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
     
     # Follow pre-determined path
     if path != []:
+        print("Following a Djikstra path...")
         if len(path) == 1:
-            post("Driving Last leg", out)
+            #post("Driving Last leg", out)
             flags[const.REPLAN] = True
         path_elem = path.pop(0)
         direction = pln.to_head(heading, path_elem, graph, location)
@@ -156,6 +157,7 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
     dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
     if dest == location:
         done = True
+        print("Goal reached @ " + str(dest) + "!")
         return (path, heading, graph, location, done, subtarget) 
     if cmd == None:
         raise Exception("Invalid command")
@@ -170,13 +172,12 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
     # Goal does not exist so check for direct explore
     if path == []:
         subtarget = closest_unexp_inters(graph.unexp_inters(), dest)
-        print("der der derrr: " + str(subtarget))
-
         if location == subtarget:
-            print("Subtarget reached at " + str(subtarget) + "!")
+            post("Subtarget reached at " + str(subtarget), out)
             subtarget = None
             direction = pln.l_r_s_to_target(graph.get_intersection(location),
                                             heading, dest)
+            print("I have decided to go " + direction)
             if direction != "STRAIGHT":
                 heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
                                         graph, location, heading, out, responses,
@@ -187,11 +188,12 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
                 post("Stuck! Clearing Blockages", out)
                 raise Exception("Need to clear the blockages")
             else:
-                print("New subtarget: " + str(subtarget))
+                print("Subtarget: " + str(subtarget))
                 djik.reset(subtarget)
                 path = djik.gen_path(location)
         
     post("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...", out)
+    print("Popping from pppppath")
     path_elem = path.pop(0)
     direction = pln.to_head(heading, path_elem, graph, location)
     while heading != path_elem:
