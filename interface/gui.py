@@ -177,24 +177,12 @@ def kill_robot(robot_thread):
 
 
 def cmp_input(entry, out):
-    # flags: explore, navigate, stepping, step, save, show, quit, clear
-    CMD_DICT = {
-        "pause": [True, False, True, False, False, False, False, False, False],
-        "explore": [True, False, False, True, False, -1, False, False, False],
-        "goal": [False, True, False, False, False, -1, False, False, False],
-        "show": [-1, -1, -1, -1, -1, True, False, False, False],
-        "stepping": [-1, -1, True, -1, -1, -1, False, False, False],
-        "step": [-1, -1, -1, True, -1, -1, False, False, False],
-        "save": [-1, -1, -1, -1, True, -1, False, False, False],
-        "quit": [-1, -1, -1, -1, -1, -1, True, -1, False],
-        "clear": [-1, -1, -1, -1, -1, -1, False, True, False],
-    }
     cmd = entry.get().lower()
-    if cmd in CMD_DICT or cmd[:4] == 'goal' or cmd[:4]=='save':
+    if cmd in const.CMD_DICT or cmd[:4] == 'goal' or cmd[:4]=='save':
         if cmd[:4] == 'goal' or cmd[:4]=='save':
-            sigs = CMD_DICT[cmd[:4]]
+            sigs = const.CMD_DICT[cmd[:4]]
         else:
-            sigs = CMD_DICT[cmd]
+            sigs = const.CMD_DICT[cmd]
         if cmd[:4] == "goal":
             goal = cmd[5:]
             sigs.append(goal)
