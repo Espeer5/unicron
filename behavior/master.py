@@ -26,7 +26,7 @@ import mapping.planning as pln
 from sensing.proximitysensor import ProximitySensor
 import mapping.checkMap as checks
 from behavior.decision import *
-from interface.ui_util import post
+from interface.ui_util import post, init_state, set_state
 
 
 def end(ultraSense, driveSys, io):
@@ -44,7 +44,7 @@ def end(ultraSense, driveSys, io):
     io.stop()
   
 
-def master(flags, out, responses, resp_flag, map_num=None):
+def master(flags, out, responses, resp_flag, state, map_num=None):
     """ This function interacts with the UI module to allow Norman to execute 
     different behaviors, allowing Norman to switch behaviors in between turns. 
     First executes a line follow, then decides how to turn based on which
@@ -63,29 +63,28 @@ def master(flags, out, responses, resp_flag, map_num=None):
                                 const.PWM_FREQ)
     IRSensor = LineSensor(io, const.IR_PINS)
     ultraSense = ProximitySensor(io)
-    
+    init_state(out, responses, resp_flag, state)
     while((flags[const.EXP_FLAG], flags[const.GL_FLAG]) == (False, False)):
         time.sleep(2)
         continue
     graph = None
     if map_num != None:
         graph = pln.from_pickle(map_num)
-    if graph == None and flags[const.GL_FLAG]:
-        raise Exception("Norman needs a map to navigate >:(")
-    if flags[const.EXP_FLAG] and flags[const.GL_FLAG]:
-        raise Exception("Norman cannot explore and navigate at the same time >:(")
-    location = (0, 0)
-    heading = 0 
-    prev_loc = (0, 0)
+    location = state[0]
+    heading = state[1]
+    prev_loc = (location[0] - const.heading_map[heading][0], 
+                location[1] - const.heading_map[heading][1])
+    set_state(state, location, heading)
     tool = None
     if graph != None:
         tool = Visualizer(graph)
     djik = None 
     if graph != None:
-        djik = Djikstra(graph, (0, 0))
+        djik = Djikstra(graph, location)
     path = []
     active = True
     just_pulled_up = True
+    subtarget = None
 
     try:
         while True:
@@ -103,23 +102,24 @@ def master(flags, out, responses, resp_flag, map_num=None):
                 else:
                     tool.show_path(location, path)
 
-            
             if graph != None:
-                act.center_block(ultraSense, location, heading, graph)
-                if (graph.get_intersection(location).get_blockages()[heading]
-                    != const.BLK and active):
+                act.center_block(ultraSense, location, heading, graph, out)
+                if (graph.get_intersection(location).get_blockages()[heading] !=
+                    const.BLK and active):
                     location, prev_loc, heading = act.adv_line_follow(driveSys, 
                                                                       IRSensor, 
                                                                       ultraSense, 
                                                                       tool, 
                                                                       location, 
                                                                       heading, 
-                                                                      graph)
+                                                                      graph, out)
+                    set_state(state, location, heading)
                     act.pullup(driveSys)
                     just_pulled_up = True
                 else:
-                    print(just_pulled_up)
                     path = []
+
+                    # edge case here
 
                     # if not just_pulled_up:
                     #     # turn to nearest road
@@ -135,7 +135,7 @@ def master(flags, out, responses, resp_flag, map_num=None):
                     #                                                     tool, 
                     #                                                     location, 
                     #                                                     heading, 
-                    #                                                     graph)
+                    #                                                     graph, out)
                     #     act.find_blocked_streets(ultraSense, location, heading, graph)
                     #     act.pullup(driveSys)
                     #     just_pulled_up = True
@@ -146,12 +146,14 @@ def master(flags, out, responses, resp_flag, map_num=None):
                                                                   tool, 
                                                                   location, 
                                                                   heading, 
-                                                                  graph)
-                graph, tool, djik = pln.init_plan(location, heading)
+                                                                  graph, out)
+                set_state(state, location, heading)
+                graph, tool, djik = pln.init_plan(location, heading, prev_loc)
                 post("Normstorm Navigation Enabled", out)
-                act.find_blocked_streets(ultraSense, location, heading, graph)
+                act.find_blocked_streets(ultraSense, location, heading, graph, out)
                 act.pullup(driveSys)
                 just_pulled_up = True
+
             if prev_loc != location:
                 graph.driven_connection(prev_loc, location, heading)
             # we can assume no 45 degree roads exist approaching intersection
@@ -167,20 +169,21 @@ def master(flags, out, responses, resp_flag, map_num=None):
             if flags[const.GL_FLAG]:
                 while flags[const.DATA] == None:
                     continue
-                path, heading, graph, location, done = manual_djik(driveSys,
+                path, heading, graph, location, done, subtarget = manual_djik(driveSys,
                                                                    IRSensor,
                                                                    ultraSense,
                                                                    path, 
                                                                    heading, 
                                                                    graph, 
                                                                    location, 
-                                                                   djik, 
-                                                                   flags[const.DATA], 
+                                                                   djik,
                                                                    flags, out, 
                                                                    responses, 
-                                                                   resp_flag)
+                                                                   resp_flag,
+                                                                   subtarget)
+                set_state(state, location, heading)
                 active = not done
-                just_pulled_up = False
+                #just_pulled_up = False
                 continue
             elif flags[const.EXP_FLAG]:
                 active = True
@@ -199,6 +202,7 @@ def master(flags, out, responses, resp_flag, map_num=None):
                                                                djik, 
                                                                prev_loc, out,
                                                                responses, resp_flag)
+                    set_state(state, location, heading)
                 continue
         end(ultraSense, driveSys, io)
     except KeyboardInterrupt:

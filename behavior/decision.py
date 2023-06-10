@@ -13,7 +13,7 @@ import constants as const
 import driving.actions as act
 import mapping.checkMap as checks
 import mapping.planning as pln 
-from mapping.MapGraph import unb_head
+from mapping.MapGraph import unb_head, closest_unexp_inters
 from interface.ui_util import post
 
 
@@ -32,7 +32,7 @@ def explore_turn(driveSys, IRSensor, ultraSense, direction, graph, location,
     post("angle: " + str(ang), out)
     graph.markoff(location, ang, orig_head, direction[0])
     if graph != None:
-         act.center_block(ultraSense, location, heading, graph)
+         act.center_block(ultraSense, location, heading, graph, out)
     return heading
 
 
@@ -107,7 +107,7 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
 
         while heading != direc:
             heading = explore_turn(driveSys, IRSensor, ultraSense, 
-                                   act.to_head(heading, direc, graph, location),
+                                   pln.to_head(heading, direc, graph, location),
                                      graph, location, heading, out, responses, 
                                      resp_flag)
         return (path, graph, location, heading)
@@ -117,7 +117,7 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
         direc = unb_head(graph, location)
         while heading != direc:
             heading = explore_turn(driveSys, IRSensor, ultraSense, 
-                                   act.to_head(heading, direc, graph, location),
+                                   pln.to_head(heading, direc, graph, location),
                                      graph, location, heading, out, responses, 
                                      resp_flag)
         return (path, graph, location, heading)
@@ -130,44 +130,73 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
     return (path, graph, location, heading)
 
 
-def manual_djik(driveSys, IRSensor, path, heading, graph, location, djik, cmd, 
-                flags, out):
+def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, djik, 
+                flags, out, responses, resp_flag, subtarget):
     """Use Djikstra's algorithm to find the shortest path to a specified
     location in a predetermined map and then follows the path
     """
     done = False
+    cmd = flags[const.DATA]
+    
+    # Follow pre-determined path
     if path != []:
         if len(path) == 1:
             post("Driving Last leg", out)
             flags[const.REPLAN] = True
         path_elem = path.pop(0)
-        direction = act.to_head(heading, path_elem, graph, location)
+        direction = pln.to_head(heading, path_elem, graph, location)
         while heading != path_elem:
-            angle = abs(act.exec_turn(driveSys, IRSensor, direction))
-            heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
+            heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
+                                   graph, location, heading, out, responses,
+                                   resp_flag)
         time.sleep(.02)
-        return (path, heading, graph, location, done)
-    else:
-        dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
-        if dest == location:
-            done = True
-            return (path, heading, graph, location, done) 
-        if cmd == None: # or dest == location:
-            raise Exception("Norman will not navigate to where he already is")
+        return (path, heading, graph, location, done, subtarget)
+
+    # Get new destination
+    dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
+    if dest == location:
+        done = True
+        return (path, heading, graph, location, done, subtarget) 
+    if cmd == None:
+        raise Exception("Invalid command")
+    
+    # Recalculate Djikstra's if the goal exists
+    if graph.contains(dest):
         djik.reset(dest)
         path = djik.gen_path(location)
-        post("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...", out)
-        path_elem = path.pop(0)
-        direction = act.to_head(heading, path_elem, graph, location)
-        while heading != path_elem:
-            angle = abs(act.exec_turn(driveSys, IRSensor, direction))
-            heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
-        time.sleep(.02)
-        return (path, heading, graph, location, done)
+    else:
+        path = []
+
+    # Goal does not exist so check for direct explore
+    if path == []:
+        subtarget = closest_unexp_inters(graph.unexp_inters(), dest)
+        print("der der derrr: " + str(subtarget))
+
+        if location == subtarget:
+            print("Subtarget reached at " + str(subtarget) + "!")
+            subtarget = None
+            direction = pln.l_r_s_to_target(graph.get_intersection(location),
+                                            heading, dest)
+            if direction != "STRAIGHT":
+                heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
+                                        graph, location, heading, out, responses,
+                                        resp_flag)
+            return (path, heading, graph, location, done, subtarget)
+        else:
+            if subtarget == None:
+                post("Stuck! Clearing Blockages", out)
+                raise Exception("Need to clear the blockages")
+            else:
+                print("New subtarget: " + str(subtarget))
+                djik.reset(subtarget)
+                path = djik.gen_path(location)
+        
+    post("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...", out)
     path_elem = path.pop(0)
     direction = pln.to_head(heading, path_elem, graph, location)
     while heading != path_elem:
-        angle = abs(act.exec_turn(driveSys, IRSensor, direction))
-        heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
+        heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
+                                graph, location, heading, out, responses,
+                                resp_flag)
     time.sleep(.02)
-    return (path, heading, graph, location, done)
+    return (path, heading, graph, location, done, subtarget)

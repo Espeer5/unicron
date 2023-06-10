@@ -1,5 +1,5 @@
 *.pickle
-__pychache__
+__pycache__
 deprecated/
 pickles/
 examples/

@@ -7,8 +7,10 @@ Date: 5/8/23
 """
 
 from sensing.filters import InterDetector, LRDetector, NextRoadDetector
+from mapping.checkMap import check_end
 import constants as const
 import time
+from interface.ui_util import post
 
 def line_follow(driveSys, IRSense, ultraSense, tool):
     """ This behavior of the robot causes the bot to begin following a 
@@ -59,7 +61,7 @@ def line_follow(driveSys, IRSense, ultraSense, tool):
 	        const.FEEDBACK_TABLE.get(reading)[1])
 
 
-def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, graph):
+def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, graph, out):
     """ This behavior of the robot performs an advacned line follow, however,
         if detects an object immediately in its path with the ultrasound
         sensors, it performs a 180 degree U-turn. If it gets stuck on a road
@@ -69,7 +71,7 @@ def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, gra
     num_Uturns = 0
     prev_loc = location
     while line_follow(driveSys, IRSensor, ultraSense, tool) != const.SUCCESS:
-        heading, prev_loc = exec_Uturn(driveSys, IRSensor, location, heading)
+        heading, prev_loc = exec_Uturn(driveSys, IRSensor, location, heading, out)
         num_Uturns += 1
         if num_Uturns >= 2:
             while ultraSense.read()[1] < 0.35:
@@ -78,8 +80,9 @@ def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, gra
     location = prev_loc
     location = (location[0] + const.heading_map[heading][0], 
                 location[1] + const.heading_map[heading][1])
+
     if graph != None:
-        find_blocked_streets(ultraSense, location, heading, graph)
+        find_blocked_streets(ultraSense, location, heading, graph, out)
 
     if tool != None:
         tool.show()
@@ -152,13 +155,13 @@ def exec_turn(driveSys, sensor, direction):
     return calculate_angle(direction, tm)
 
 
-def exec_Uturn(driveSys, IRSensor, location, heading):
+def exec_Uturn(driveSys, IRSensor, location, heading, out):
     """
     A function that executes a 180 degree turn for the robot in the middle of a
     road. It assumes that the angle turned was 180 degrees regardless of the
     angle calculated. 
     """
-    print("Skirrrrrrt! Flipping a U-ey")
+    post("Skirrrrrrt! Flipping a U-ey", out)
     ang = abs(exec_turn(driveSys, IRSensor, "RIGHT"))
     time.sleep(.2)
     heading = (heading + 4) % 8  # assume 180 degree angle
@@ -180,7 +183,7 @@ def past_end():
     raise Exception("Attempted to drive straight where there is no road")
 
 
-def find_blocked_streets(ultraSense, location, heading, graph):
+def find_blocked_streets(ultraSense, location, heading, graph, out):
     """
     Search for blocked street ahead only if street ahead exists. Updates the graph
     and returns a boolean whether it found any blocked streets.
@@ -220,30 +223,30 @@ def find_blocked_streets(ultraSense, location, heading, graph):
                              location[1] + const.heading_map[heading][1])
             if (graph.contains(next_location) or inters.get_streets()[heading] == const.UND or \
                 inters.get_streets()[heading] == const.DRV) and not center_sensor_bad:
-                graph.block_connection(location, next_location, heading)
+                graph.block_connection(location, next_location, heading, out)
             else:
-                graph.unblock_connection(location, next_location, heading)
+                graph.unblock_connection(location, next_location, heading, out)
 
             # left sensor
             next_location = (location[0] + const.heading_map[(heading+2)%8][0],
                              location[1] + const.heading_map[(heading+2)%8][1])
             if (graph.contains(next_location) or inters.get_streets()[(heading+2)%8] == const.UND or \
                 inters.get_streets()[(heading+2)%8] == const.DRV) and not left_sensor_bad:
-                graph.block_connection(location, next_location, (heading+2)%8)
+                graph.block_connection(location, next_location, (heading+2)%8, out)
             else:
-                graph.unblock_connection(location, next_location, (heading+2)%8)
+                graph.unblock_connection(location, next_location, (heading+2)%8, out)
 
             # right sensor
             next_location = (location[0] + const.heading_map[(heading-2)%8][0],
                              location[1] + const.heading_map[(heading-2)%8][1])
             if (graph.contains(next_location) or inters.get_streets()[(heading-2)%8] == const.UND or \
                 inters.get_streets()[(heading-2)%8] == const.DRV) and not right_sensor_bad:
-                graph.block_connection(location, next_location, (heading-2)%8)
+                graph.block_connection(location, next_location, (heading-2)%8, out)
             else:
-                graph.unblock_connection(location, next_location, (heading-2)%8)
+                graph.unblock_connection(location, next_location, (heading-2)%8, out)
 
 
-def center_block(ultraSense, location, heading, graph):
+def center_block(ultraSense, location, heading, graph, out):
     """
     Search for blocked street ahead only if street ahead exists. Updates the graph
     and returns a boolean whether it found any blocked streets. Uses only center 
@@ -278,6 +281,6 @@ def center_block(ultraSense, location, heading, graph):
                              location[1] + const.heading_map[heading][1])
             if (graph.contains(next_location) or inters.get_streets()[heading] == const.UND or \
                 inters.get_streets()[heading] == const.DRV) and not center_sensor_bad:
-                graph.block_connection(location, next_location, heading)
+                graph.block_connection(location, next_location, heading, out)
             else:
-                graph.unblock_connection(location, next_location, heading)
+                graph.unblock_connection(location, next_location, heading, out)

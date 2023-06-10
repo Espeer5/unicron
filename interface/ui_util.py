@@ -7,8 +7,7 @@ Date: 6/6/23
 
 import textwrap
 
-MESSAGE_MEM = 6
-
+MESSAGE_MEM = 4
 
 def post(message, out):
     """Posts the given message to the GUI at the location indicated by the out 
@@ -30,6 +29,10 @@ def get_messages(messages):
     return str
 
 def get_resp(responses, out, resp_flag):
+    """Waits for a user to enter a response to a query into the entry box in the
+    gui, then inputs the response into the shared responses array for use by 
+    whichever thread requested the information from the user
+    """
     try:
         while not resp_flag[0]:
             continue
@@ -38,3 +41,26 @@ def get_resp(responses, out, resp_flag):
     except IndexError:
         post("Please Provide Response", out)
 
+
+def init_state(out, responses, resp_flag, state):
+    """Forces the user to manually input heading and direction prior to starting
+    up any behavior of the bot
+    """
+    post("Input starting location: ", out)
+    loc = get_resp(responses, out, resp_flag)
+    post("Input starting heading: ", out)
+    head = get_resp(responses, out, resp_flag)
+    loc_arr = loc.split(',')
+    state[0] = (int(loc_arr[0]), int(loc_arr[1]))
+    state[1] = int(head)
+    post("Ready to begin", out)
+
+
+def set_state(state, location, heading):
+    state[0] = location
+    state[1] = heading
+
+
+def set_flags_to(flags, target):
+    for i in range(len(flags)):
+        flags[i] = target[i]

@@ -28,7 +28,6 @@ def check_head(direction, graph, location, heading, orig_heading, ang, out,
         ang = from_orig * 45
         if inters.check_connection(heading) == const.UNK:
             post(f"Correcting error... am I facing heading {heading}?", out)
-            print(get_resp(responses, out, resp_flag))
             if(get_resp(responses, out, resp_flag).upper() == "N"):
                 post("Input true heading: ", out)
                 heading = int(get_resp(responses, out, resp_flag))

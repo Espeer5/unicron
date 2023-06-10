@@ -9,6 +9,8 @@ Date: 4/30/23
 from constants import CONDITIONS, UNK, UND, NNE, DRV, \
                       STREET_CONDITIONS, BLK, UNB, invert_h_map
 import pickle
+from interface.ui_util import post
+from math import dist
 
 
 class Intersection:
@@ -51,7 +53,7 @@ class Intersection:
         """Return the streets list form an Intersection"""
         return self.streets
     
-    def set_blockage(self, heading, status):
+    def set_blockage(self, heading, status, out):
         """ Set the blockage status of a street in an intersection.
 
             Arguments: heading - the direction of the street to set blockage
@@ -63,9 +65,9 @@ class Intersection:
         else:
             if self.blockages[heading] != status:
                 if status == BLK:
-                    print("Blocking " + str(self.location) + " w heading " + str(heading))
+                    post("Blocking " + str(self.location) + " w heading " + str(heading), out)
                 else:
-                    print("Unblocking " + str(self.location) + " w heading " + str(heading))
+                    post("Unblocking " + str(self.location) + " w heading " + str(heading), out)
                 self.blockages[heading] = status
 
     def get_blockages(self):
@@ -142,8 +144,9 @@ class MapGraph:
         """
         return (heading + 4) % 8
 
-    def __init__(self, location, heading):
-        origin = Intersection((0, 0))
+    def __init__(self, location, heading, prev_loc):
+
+        origin = Intersection(prev_loc)
         point = Intersection(location, heading)
         self.graph = {point:[origin], origin:[point]}
 
@@ -183,7 +186,7 @@ class MapGraph:
         if inters not in self.graph[prev_inters]:
             self.graph[prev_inters].append(inters)
 
-    def block_connection(self, prev_location, location, heading):
+    def block_connection(self, prev_location, location, heading, out):
         """
         Marks the street connecting each intersection as blocked
 
@@ -193,12 +196,12 @@ class MapGraph:
         """
         prev_inters = self.get_intersection(prev_location)
         if prev_inters != None:
-            prev_inters.set_blockage(heading, BLK)
+            prev_inters.set_blockage(heading, BLK, out)
         inters = self.get_intersection(location)
         if inters != None:
-            inters.set_blockage(self.invert_heading(heading), BLK)
+            inters.set_blockage(self.invert_heading(heading), BLK, out)
 
-    def unblock_connection(self, prev_location, location, heading):
+    def unblock_connection(self, prev_location, location, heading, out):
         """
         Marks the street connecting each intersection as unblocked
 
@@ -208,10 +211,10 @@ class MapGraph:
         """
         prev_inters = self.get_intersection(prev_location)
         if prev_inters != None:
-            prev_inters.set_blockage(heading, UNB)
+            prev_inters.set_blockage(heading, UNB, out)
         inters = self.get_intersection(location)
         if inters != None:
-            inters.set_blockage(self.invert_heading(heading), UNB)
+            inters.set_blockage(self.invert_heading(heading), UNB, out)
 
 
     def no_connection(self, location, heading):
@@ -309,6 +312,15 @@ class MapGraph:
             if inters.check_blockage(heading) == UNB:
                 unblocked_neighbors.append(chile)
         return unblocked_neighbors
+    
+    def unexp_inters(self):
+        """ Returns a list of the locations of all unexplored intersections """
+        unexp = []
+        for inters in self.graph:
+            if not inters.is_explored():
+                print("loc " + str(inters.get_location()))
+                unexp.append(inters.get_location())
+        return unexp
 
     def __iter__(self):
         """
@@ -348,3 +360,18 @@ def unk_dir(graph, inter, heading):
             if r_list.index(UNK) < l_list.index(UNK):
                 return "RIGHT"
     return "LEFT"
+
+
+def closest_unexp_inters(unexp_intersections, dest):
+    """ Determines the closest intersection to a destination"""
+    if len(unexp_intersections) == 0:
+        return None
+    closest_inter = unexp_intersections[0]
+    closest_dist = dist(dest, unexp_intersections[0])
+    for location in unexp_intersections:
+        distance = dist(dest, location)
+        if  distance < closest_dist:
+            closest_inter = location
+            closest_dist = distance
+    return closest_inter
+        

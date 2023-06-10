@@ -11,6 +11,8 @@ from queue import PriorityQueue
 import constants as const
 from mapping.graphics import Visualizer
 import pickle
+from math import dist
+from constants import heading_map, UNK, UND
 
 
 class Djikstra:
@@ -137,14 +139,14 @@ def from_pickle(map_num = None):
     return toRet
 
 
-def init_plan(location, heading):
+def init_plan(location, heading, prev_loc):
     """Initializes the variables needed for route planning by a behavior
     
     Arguments: location - the current robot location
                heading - the current robot heading
     """
-    graph = MapGraph(location, heading)
-    return (graph, Visualizer(graph), Djikstra(graph, (0, 0)))
+    graph = MapGraph(location, heading, prev_loc)
+    return (graph, Visualizer(graph), Djikstra(graph, prev_loc))
 
 
 def to_head(heading, next_h, graph, location):
@@ -202,3 +204,51 @@ def l_r_unb(inter, heading):
             if r_list.index(const.UNB) < l_list.index(const.UNB):
                 return "RIGHT"
     return "LEFT"
+
+def l_r_s_to_target(inter, heading, target):
+    """ Determines whether left, right, or straight is optimal for directed
+        explore to a target """
+    
+    # Determine if left, right, or straight is closest to target
+    location = inter.get_location()
+    straight_loc = (location[0] + heading_map[heading][0],
+                    location[1] + heading_map[heading][1])
+    left_loc = (location[0] + heading_map[(heading + 2) % 8][0],
+                location[1] + heading_map[(heading + 2) % 8][1])
+    right_loc = (location[0] + heading_map[(heading - 2) % 8][0],
+                 location[1] + heading_map[(heading - 2) % 8][1])
+    
+
+    print(dist(straight_loc, location) < dist(left_loc, location))
+    print(dist(straight_loc, location) < dist(right_loc, location))
+    print(inter.get_streets()[heading] == UND)
+
+    if dist(straight_loc, location) < dist(left_loc, location) and \
+        dist(straight_loc, location) < dist(right_loc, location) and \
+        inter.get_streets()[heading] == UND:
+        return "STRAIGHT"
+    
+    dir_to_target = "LEFT"
+    if dist(location, right_loc) < dist(location, left_loc):
+        dir_to_target = "RIGHT"
+
+    print ("Norman thinks he wants to go to the " + dir_to_target)
+
+    # Make sure this direction has unexplored roads
+    for i in range(3):
+        if dir_to_target == "LEFT":
+            condition = inter.get_streets()[(heading + i + 1) % 8]
+            if condition == UND or condition == UNK:
+                return "LEFT"
+        else:
+            condition = inter.get_streets()[(heading - i - 1) % 8]
+            if condition == UND or condition == UNK:
+                return "RIGHT"
+
+    # Direction does not have unexplored roads so switch directions
+    print("He changed his mind and is instead going the other way")
+
+    if dir_to_target == "LEFT":
+        return "RIGHT"
+    return "LEFT"
+    

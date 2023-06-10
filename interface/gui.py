@@ -1,4 +1,4 @@
-"""This module contains the funcitons needed to initialize and update the 
+"""This module contains the functions needed to initialize and update the 
 graphical user interface used for robot control in ME/CS/EE 129 Spring '23. 
 The GUI allows the user to input commands to the robot, see robot status
 commentary/output, and respond to robot requests for information in seperate IO
@@ -14,13 +14,12 @@ import threading
 import ctypes
 from behavior.master import *
 from interface.ui_util import *
+import constants as const
+import ros
 
 #GUI Window size
 X_SIZE = 950
 Y_SIZE = 680
-
-#Maximum number of posted messages saved in the GUI at a time
-MESSAGE_MEM = 6
 
 def run_gui():
     """ Initializes the GUI window and populates it with the features making 
@@ -67,19 +66,24 @@ def run_gui():
     out = OSpace(root, messages)
     outs = (out[0], out[1], messages)
 
-    robot_thread = create_rth(flags, outs, responses, resp_flag)
-
-    cmd_entry(root, outs, flags, robot_thread)
-    resp_entry(root, responses, resp_flag)
-
     post("WARNING: norman is feeling extra naughty (ง ͠° ͟ʖ ͡°)ง", outs)
+    state = [(None, None), None]
+
+    # Start the ROS worker thread.
+    ros_thread = threading.Thread(name="ROSThread", target=lambda: ros.runros(state, flags))
+    ros_thread.start()
+
+    robot_thread = create_rth(flags, outs, responses, resp_flag, state)
+
+    cmd_entry(root, outs, flags, robot_thread, ros_thread)
+    resp_entry(root, responses, resp_flag)
     
     root.after(1000, lambda: update_gmap(root, map_label))
-    root.protocol("WM_DELETE_WINDOW", lambda: on_close(root, robot_thread))
+    root.protocol("WM_DELETE_WINDOW", lambda: on_close(root, robot_thread, ros_thread))
     try:
         root.mainloop()
     except KeyboardInterrupt:
-        on_close(root, robot_thread)
+        on_close(root, robot_thread, ros_thread)
 
 
 def OSpace(root, messages):
@@ -103,15 +107,19 @@ def update_gmap(root, label):
     """Updates the map png included in the gui to allow the map to change as 
     the robot explores
     """
-    map = Image.open("map.png")
-    map = map.resize((500,400))
-    map = ImageTk.PhotoImage(map)
-    label.configure(image=map)
-    label.image = map
-    root.after(1000, lambda: update_gmap(root, label))
+    #Try-except protects from race condition in updating map png file
+    try:
+        map = Image.open("map.png")
+        map = map.resize((500,400))
+        map = ImageTk.PhotoImage(map)
+        label.configure(image=map)
+        label.image = map
+        root.after(1000, lambda: update_gmap(root, label))
+    except Exception:
+        root.after(1000, lambda: update_gmap(root, label))
 
 
-def cmd_entry(root, out, flags, robot_thread):
+def cmd_entry(root, out, flags, robot_thread, ros_thread):
     """ Creates the entry field in the GUI into which a user may input GUI 
     commands, and binds it to the funciton which sets the flags shared by the 
     robot thread.
@@ -127,7 +135,7 @@ def cmd_entry(root, out, flags, robot_thread):
     entry.pack()
     button = tk.Button(cmd_frame, text="Enter Comand", border=2, 
                        command=lambda: set_sigs(root, flags, entry, out, 
-                                                   robot_thread))
+                                                   robot_thread, ros_thread))
     button.pack()
 
 
@@ -151,16 +159,17 @@ def resp_entry(root, responses, resp_flag):
 
 
 def send_resp(entry, responses, resp_flg):
-    responses.append(entry.get)
+    responses.append(entry.get())
     resp_flg[0] = True
     return
 
 
-def on_close(root, robot_thread):
-    """Defined the behavior which occurs when the gui is closed
+def on_close(root, robot_thread, ros_thread):
+    """Defines the behavior which occurs when the gui is closed
     """
     kill_robot(robot_thread)
-    root.destroy()
+    kill_ros(ros_thread)
+    root.quit()
 
 
 def kill_robot(robot_thread):
@@ -173,7 +182,11 @@ def kill_robot(robot_thread):
     print("Waiting for robot thread to return")
     robot_thread.join()
     print("Robot thread returned")
-    return None
+
+def kill_ros(rosthread):
+    ctypes.pythonapi.PyThreadState_SetAsyncExc(
+    ctypes.c_long(rosthread.ident), ctypes.py_object(KeyboardInterrupt))
+    rosthread.join()
 
 
 def cmp_input(entry, out):
@@ -183,30 +196,29 @@ def cmp_input(entry, out):
             sigs = const.CMD_DICT[cmd[:4]]
         else:
             sigs = const.CMD_DICT[cmd]
+        sigs.append(None)
         if cmd[:4] == "goal":
             goal = cmd[5:]
-            sigs.append(goal)
-        if cmd[:4] == "save":
+            sigs[const.DATA] = goal
+        elif cmd[:4] == "save":
             filen = cmd[5:]
-            sigs.append(filen)
-        else:
-            sigs.append(None)
+            sigs[const.DATA] = filen
         return sigs
     else:
         post("Invalid command", out)
 
 
-def create_rth(flags, outs, responses, resp_flag, map_num=None):
+def create_rth(flags, outs, responses, resp_flag, state, map_num=None):
     """ Initializes and starts up the robot control thread
     """
     robot_thread = threading.Thread(name="RobotThread", \
                                  target=master,
-                                 args=[flags, outs, responses, resp_flag, map_num])
+                                 args=[flags, outs, responses, resp_flag, state, map_num])
     robot_thread.start()
     return robot_thread
 
 
-def set_sigs(root, flags, entry, out, robot_thread):
+def set_sigs(root, flags, entry, out, robot_thread, ros_thread):
     """ Sets the flags shared between the UI and the robot_thread to be
     responded to by the robot thread. 
     """
@@ -217,4 +229,4 @@ def set_sigs(root, flags, entry, out, robot_thread):
         if temp[i] != -1:
             flags[i] = temp[i]
         if flags[6] == 1:
-                on_close(root, robot_thread)
+                on_close(root, robot_thread, ros_thread)
