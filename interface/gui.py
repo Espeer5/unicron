@@ -49,7 +49,7 @@ def run_gui():
                          highlightbackground="black", highlightthickness=3)
     top_frame.pack()
     top_frame.place(anchor='center', relx=0.5, rely=.06)
-    img = ImageTk.PhotoImage(Image.open("ns_tbar.png"))
+    img = ImageTk.PhotoImage(Image.open(const.GRAPHX_PATH + 'ns_tbar.png'))
     img_label = tk.Label(top_frame, image=img)
     img_label.pack()
 
@@ -57,7 +57,7 @@ def run_gui():
     map_frame = tk.Frame(root, width=X_SIZE/2)
     map_frame.pack()
     map_frame.place(anchor='center', relx=.75, y=450)
-    map = Image.open("map.png")
+    map = Image.open(const.MAP_PATH)
     map = map.resize((500, 400))
     map = ImageTk.PhotoImage(map)
     map_label = tk.Label(map_frame, image=map)
@@ -115,7 +115,7 @@ def update_gmap(root, label):
     #Only updates when image not being written by robot thread
     try:
         #Load map.png and show it in the GUI
-        map = Image.open("map.png")
+        map = Image.open(const.MAP_PATH)
         map = map.resize((500,400))
         map = ImageTk.PhotoImage(map)
         label.configure(image=map)

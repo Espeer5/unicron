@@ -45,11 +45,17 @@ class ProximitySensor():
         self.sensors[self.channel].trigger()
 
     def run(self):
+        """Triggers the ultrasounds in an infinite loop such that readings 
+        are taken constantly at the maximum safe frequency.
+        """
         while self.triggering:
             self.trigger()
             time.sleep(0.05)
 
     def shutdown(self):
+        """Shuts down the ultrasound thread so that the infinite loop is closed, 
+        and the thread is joined back to the main thread.
+        """
         self.triggering = False
         print("Waiting for triggering thread to finish...")
         self.thread.join()
@@ -62,12 +68,19 @@ class ProximitySensor():
                 self.sensors[2].read())
     
     def flight_time(self):
+        """Returns the time between trigger and reception for the signal sent 
+        out by each sensor.
+        """
         return (self.sensors[0].flight_time(),
                 self.sensors[1].flight_time(),
                 self.sensors[2].flight_time())
 
 
 def test():
+    """Tests the ultrasounds sensors by printing the measurements the sensors 
+    are taking as they're taken in order to verify that the measurements are 
+    accurate and taken with the appropriate frequency.
+    """
     print("Setting up the GPIO...")
     io = pigpio.pi()
     if not io.connected:

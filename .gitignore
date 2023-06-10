@@ -1,6 +1,5 @@
 *.pickle
-*__pycache__
+__pycache__/
 deprecated/
 pickles/
 examples/
-*.cpython

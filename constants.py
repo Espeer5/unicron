@@ -113,7 +113,6 @@ CLEAR = 7
 REPLAN = 8
 DATA = 9
 
-
 # Command:Flag mappings
 CMD_DICT = {
         "pause": [True, False, True, False, False, False, False, False, False],
@@ -126,3 +125,8 @@ CMD_DICT = {
         "quit": [-1, -1, -1, -1, -1, -1, True, -1, False],
         "clear": [-1, -1, -1, -1, -1, -1, False, True, False],
     }
+
+#Locations of the images needed to display in the GUI, and the shared image file 
+#of the map used by the UI and robot threads
+GRAPHX_PATH = 'interface/images/'
+MAP_PATH = GRAPHX_PATH + 'map.png'

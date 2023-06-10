@@ -8,7 +8,7 @@ Date: 5/2
 """
 
 import matplotlib.pyplot as plt
-from constants import heading_map, BLK, invert_h_map
+from constants import heading_map, BLK, invert_h_map, MAP_PATH
 
 class Visualizer:
     """
@@ -83,7 +83,7 @@ class Visualizer:
             else:
                 plt.plot(x[i], y[i], 'bo')
         plt.title("Normstorm Map")
-        plt.savefig("map.png")
+        plt.savefig(MAP_PATH)
         #plt.show()
 
     def create_path(self, start, path):
@@ -129,7 +129,7 @@ class Visualizer:
         for i in range(len(l_x)):
             plt.plot(l_x[i], l_y[i], 'b')
         plt.title("Normstorm Map")
-        plt.savefig("map.png")
+        plt.savefig(MAP_PATH)
 
     def exit(self):
         """

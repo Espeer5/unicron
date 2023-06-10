@@ -88,7 +88,8 @@ class DriveSystem():
 
 
 def test_flower():
-    """Execute a test pattern demonstrating all of the movements of the DriveSystem
+    """Execute a test pattern demonstrating all of the movements of the 
+    DriveSystem
     """
     print("Setting up the GPIO...")
     io = pigpio.pi()
@@ -99,11 +100,8 @@ def test_flower():
     driveSys = DriveSystem(io, const.L_MOTOR_PINS, const.R_MOTOR_PINS, \
                            const.PWM_FREQ)
     for style in const.MODES:
-        #if style not in ["SPIN"]:
-            #continue
         for direction in ["LEFT", "RIGHT"]:
             input("Hit Return")
             driveSys.drive(style, direction)
             time.sleep(4)
             driveSys.stop()
-                   

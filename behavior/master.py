@@ -57,6 +57,7 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
     io = pigpio.pi()
     if not io.connected:
         sys.exit(0)
+
     # Instantiate hardware objects
     driveSys = DriveSystem(io, const.L_MOTOR_PINS, \
                                 const.R_MOTOR_PINS, \
@@ -64,9 +65,13 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
     IRSensor = LineSensor(io, const.IR_PINS)
     ultraSense = ProximitySensor(io)
     init_state(out, responses, resp_flag, state)
+
+    #Hold until an action is specified by user
     while((flags[const.EXP_FLAG], flags[const.GL_FLAG]) == (False, False)):
         time.sleep(2)
         continue
+    
+    #Initialize mapping variables
     graph = None
     if map_num != None:
         graph = pln.from_pickle(map_num)
@@ -88,6 +93,7 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
 
     try:
         while True:
+            #Act on flags which do not prescrbe a behavior
             if flags[const.QUIT]:
                 break
             if flags[const.CLEAR]:
@@ -102,6 +108,7 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
                 else:
                     tool.show_path(location, path)
 
+            #Execute a line follow if possible on the current heading
             if graph != None:
                 act.center_block(ultraSense, location, heading, graph, out)
                 if (graph.get_intersection(location).get_blockages()[heading] !=
@@ -151,11 +158,13 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
 
             if prev_loc != location:
                 graph.driven_connection(prev_loc, location, heading)
+
             # we can assume no 45 degree roads exist approaching intersection
             graph.no_connection(location, (heading + 3) % 8)
             graph.no_connection(location, (heading + 5) % 8)
             checks.check_end(IRSensor, graph, location, heading)
 
+            #Execute a robot behavior based on the set flags
             if flags[const.STP_FLAG]:
                 while not flags[const.STP]:
                     continue

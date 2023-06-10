@@ -208,7 +208,7 @@ def l_r_unb(inter, heading):
 def l_r_s_to_target(inter, heading, target):
     """ Determines whether left, right, or straight is optimal for directed
         explore to a target """
-    
+
     # Determine if left, right, or straight is closest to target
     location = inter.get_location()
     straight_loc = (location[0] + heading_map[heading][0],
@@ -218,8 +218,8 @@ def l_r_s_to_target(inter, heading, target):
     right_loc = (location[0] + heading_map[(heading - 2) % 8][0],
                  location[1] + heading_map[(heading - 2) % 8][1])
 
-    if dist(straight_loc, target) < dist(left_loc, target) and \
-        dist(straight_loc, target) < dist(right_loc, target) and \
+    if dist(straight_loc, target) <= dist(left_loc, target) and \
+        dist(straight_loc, target) <= dist(right_loc, target) and \
         inter.get_streets()[heading] == UND:
         return "STRAIGHT"
     
@@ -228,13 +228,14 @@ def l_r_s_to_target(inter, heading, target):
         dir_to_target = "RIGHT"
 
     # Make sure this direction has unexplored roads
-    for i in range(3):
+    for i in range(1,4):
         if dir_to_target == "LEFT":
-            condition = inter.get_streets()[(heading + i + 1) % 8]
+            condition = inter.get_streets()[(heading + i) % 8]
+            print("Inter " + str(inter.get_location()) + " at heading " + str(heading + i) + " is " + str(condition))
             if condition == UND or condition == UNK:
                 return "LEFT"
         else:
-            condition = inter.get_streets()[(heading - i - 1) % 8]
+            condition = inter.get_streets()[(heading - i) % 8]
             if condition == UND or condition == UNK:
                 return "RIGHT"
 
@@ -244,7 +245,7 @@ def l_r_s_to_target(inter, heading, target):
         return "RIGHT"
     return "LEFT"
 
-def closest_subtarget(graph, location, target, djik):
+def closest_subtarget(graph, location, heading, target, djik):
     """ Determines the closest subtarget to drive to for directed explore.
         The closest subtarget is an unexplored intersection with a road
         that could potentially connect to an intersection with the closest
@@ -252,14 +253,17 @@ def closest_subtarget(graph, location, target, djik):
     unexp_inters = graph.unexp_inters()
     if unexp_inters == []:
         raise ("No unexplored intersections could be found...robot stuck")
-    closest_subtarget = None
-    closest_distance = inf
-    closet_path_len = inf
+    closest_subtarget = location
+    closest_distance = dist(location, target)
+    closest_path_len = 0
     for subtarget in unexp_inters:
         # get heading the robot will face if it travels to the subtarget
-        djik.reset(dest)
-        path = djik.gen_path(subtarget)
-        subheading = path[-1]
+        djik.reset(subtarget)
+        path = djik.gen_path(location)
+        subheading = heading
+        if len(path) != 0:
+            subheading = path[-1]
+        print("Subtarget " + str(subtarget) + " has Subheading " + str(subheading))
         # determine distances of adjacent intersections to target
         # make sure that unexplored streets exist in possible directions
         straight_loc = (subtarget[0] + heading_map[subheading][0],
@@ -272,21 +276,31 @@ def closest_subtarget(graph, location, target, djik):
         distances = []
         if (streets[subheading] == UND or streets[subheading] == UNK):
             distances.append(dist(straight_loc, target))
+            #print("straight dist added")
+        ### MAKING THIS GO 1-2 is usually more optimatal...I think
         for i in range(1, 4):
-            if (streets[(subheading + 2 + i) % 8] == UND or streets[(subheading + 2 + i) % 8] == UNK):
+            if (streets[(subheading + i) % 8] == UND or streets[(subheading + i) % 8] == UNK):
                 distances.append(dist(left_loc, target))
+                #print("left dist added")
                 break
-        for i in range(1, 4):
-            if (streets[(subheading - 2 - i) % 8] == UND or streets[(subheading - 2 - i) % 8] == UNK):
-                distances.append(dist(left_loc, target))
+        for i in range(1, 3):
+            if (streets[(subheading - i) % 8] == UND or streets[(subheading - i) % 8] == UNK):
+                distances.append(dist(right_loc, target))
+                #print("right dist added")
                 break
+        # for i in range(8):
+        #     if streets[i] == UND or streets[i] == UNK:
+        #         distances.append(dist(subtarget[0] + heading_map[(subheading + i) % 8], target))
+        print("Distances at " + str(subtarget) + ": " + str(distances))
         # check if there is a new closest option
         for distance in distances:
-            if distance < closest_distance or (distance == closest_distance and
-               len(path) < closest_path_len):
+            if distance < closest_distance:
                 closest_subtarget = subtarget
                 closest_distance = distance
                 closest_path_len = len(path)
+                print("New Optimal subtarget: " + str(subtarget))
+            if (distance == closest_distance and len(path) < closest_path_len):
+                print("DERR DERR DERRRRR")
     return closest_subtarget
 
 

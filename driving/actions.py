@@ -70,6 +70,8 @@ def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, gra
     """
     num_Uturns = 0
     prev_loc = location
+
+    #Execute a line follow, if sudden blockage encountered, perform U-Turn
     while line_follow(driveSys, IRSensor, ultraSense, tool) != const.SUCCESS:
         heading, prev_loc = exec_Uturn(driveSys, IRSensor, location, heading, out)
         num_Uturns += 1
@@ -77,10 +79,13 @@ def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, gra
             while ultraSense.read()[1] < 0.35:
                 pass # wait until obstacle is removed
             num_Uturns = 0
+    
+    #Update location based on what happened during line following
     location = prev_loc
     location = (location[0] + const.heading_map[heading][0], 
                 location[1] + const.heading_map[heading][1])
 
+    #Check for blockages at the new intersection
     if graph != None:
         find_blocked_streets(ultraSense, location, heading, graph, out)
 
@@ -189,8 +194,6 @@ def find_blocked_streets(ultraSense, location, heading, graph, out):
     and returns a boolean whether it found any blocked streets.
     """
 
-    time.sleep(1)
-
     # allowable distance until object blocks a street
     threshold = 0.35
     if heading % 2 != 0:
@@ -201,7 +204,7 @@ def find_blocked_streets(ultraSense, location, heading, graph, out):
         if inters != None:
             # filter ultrasound readings because the sensors suck
             readings = []
-            filter_steps = 5
+            filter_steps = 1
             for i in range(filter_steps):
                 time.sleep(0.06)
                 readings.append(ultraSense.read())
@@ -253,8 +256,6 @@ def center_block(ultraSense, location, heading, graph, out):
     sensor.
     """
 
-    time.sleep(1)
-
     # allowable distance until object blocks a street
     threshold = 0.5
     if heading % 2 != 0:
@@ -265,7 +266,7 @@ def center_block(ultraSense, location, heading, graph, out):
         if inters != None:
             # filter ultrasound readings because the sensors suck
             readings = []
-            filter_steps = 5
+            filter_steps = 1
             for i in range(filter_steps):
                 time.sleep(0.06)
                 readings.append(ultraSense.read())

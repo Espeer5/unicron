@@ -23,14 +23,21 @@ def explore_turn(driveSys, IRSensor, ultraSense, direction, graph, location,
     intersection graph with the observed streets and ensuring self consistency 
     of the graph.
     """
+    #Turn until a street is found, then stop to kill momentum
     ang = abs(act.exec_turn(driveSys, IRSensor, direction))
     time.sleep(.2)
+
+    #Update the heading from the angle turned, and ensure consistent with  map.
     orig_head = heading
     heading = (heading + const.dirMap[direction[0]][1] * ang / 45) % 8
     heading, ang = checks.check_head(direction, graph, location, heading, 
                                      orig_head, ang, out, responses, resp_flag)
     post("angle: " + str(ang), out)
+
+    #Update the graph based on where a street was found
     graph.markoff(location, ang, orig_head, direction[0])
+
+    #Check for blockages on the faced street
     if graph != None:
          act.center_block(ultraSense, location, heading, graph, out)
     return heading
@@ -42,8 +49,10 @@ def auto_inters(driveSys, sensor, graph, heading, location, ultraSense, out,
     explore an unexplored intersection, and then the calling function must 
     determine how to reach the next unexplored intesection.
     """
+    #Get the possible headings for turning each direction
     l_heads = [(heading + i) % 8 for i in range(4)]
     r_heads = [(heading - i) % 8 for i in range(4)]
+
     #If there are unkown headings, investigate them
     directi = None
     if const.UNK in [graph.get_intersection(location).check_connection(head) 
@@ -71,6 +80,8 @@ def auto_inters(driveSys, sensor, graph, heading, location, ultraSense, out,
                                                    graph, location, heading, 
                                                    out, responses, resp_flag)
             return (graph, location, heading, True)
+    
+    #Otherwise, return that no exploration was done yet
     return (graph, location, heading, False)
 
         
@@ -79,6 +90,7 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
     """Uses Djikstra's algorithm to intelligently explore the map by taking
     efficient paths to unexplored locations
     """
+    #If there is already a path stored, follow it
     if path != []:
         path_elem = path.pop(0)
         direction = pln.to_head(heading, path_elem, graph, location)
@@ -88,6 +100,8 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
         time.sleep(.02)
         return (path, graph, location, heading)
     
+    #Otherwise, check if the current intersection needs to be explored, and 
+    # if so, explore it
     graph, location, heading, explored = auto_inters(driveSys, IRSensor, 
                                                          graph, heading, 
                                                          location, ultraSense, 
@@ -113,6 +127,8 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
         return (path, graph, location, heading)
     djik.reset(dest)
     path = djik.gen_path(location)
+    
+    #If no unexplored location found to explore, drive on some unblocked heading
     if path == []:
         direc = unb_head(graph, location)
         while heading != direc:
@@ -121,6 +137,8 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
                                      graph, location, heading, out, responses, 
                                      resp_flag)
         return (path, graph, location, heading)
+
+    #Drive along the path generate by the above cases
     path_elem = path.pop(0)
     direction = pln.to_head(heading, path_elem, graph, location)
     while heading != path_elem:
@@ -146,6 +164,7 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
             flags[const.REPLAN] = True
         path_elem = path.pop(0)
         direction = pln.to_head(heading, path_elem, graph, location)
+
         while heading != path_elem:
             heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
                                    graph, location, heading, out, responses,
@@ -171,13 +190,17 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
 
     # Goal does not exist so check for direct explore
     if path == []:
-        subtarget = closest_unexp_inters(graph.unexp_inters(), dest)
+        subtarget = pln.closest_subtarget(graph, location, heading, dest, djik)
+        djik.reset(subtarget)
+        path = djik.gen_path(location)   
+        print("SUBTARGET: " + str(subtarget) + " but currently at " + str(location))
         if location == subtarget:
+            print("Subtarget reached at " + str(subtarget))
             post("Subtarget reached at " + str(subtarget), out)
             subtarget = None
             direction = pln.l_r_s_to_target(graph.get_intersection(location),
                                             heading, dest)
-            print("I have decided to go " + direction)
+            print("LRS checker: " + direction)
             if direction != "STRAIGHT":
                 heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
                                         graph, location, heading, out, responses,
@@ -188,7 +211,7 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
                 post("Stuck! Clearing Blockages", out)
                 raise Exception("Need to clear the blockages")
             else:
-                print("Subtarget: " + str(subtarget))
+                #print("Subtarget: " + str(subtarget))
                 djik.reset(subtarget)
                 path = djik.gen_path(location)
         
