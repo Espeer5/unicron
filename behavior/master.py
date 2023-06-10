@@ -197,7 +197,8 @@ def master(flags, out, responses, resp_flag, map_num=None):
                                                                location, 
                                                                heading, 
                                                                djik, 
-                                                               prev_loc, out)
+                                                               prev_loc, out,
+                                                               responses, resp_flag)
                 continue
         end(ultraSense, driveSys, io)
     except KeyboardInterrupt:
