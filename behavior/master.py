@@ -26,7 +26,7 @@ import mapping.planning as pln
 from sensing.proximitysensor import ProximitySensor
 import mapping.checkMap as checks
 from behavior.decision import *
-from interface.ui_util import post, init_state, set_state
+from interface.ui_util import *
 
 
 def end(ultraSense, driveSys, io):
@@ -93,7 +93,26 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
 
     try:
         while True:
-            #Act on flags which do not prescrbe a behavior
+            if flags == const.CMD_DICT['reset']:
+                init_state(out, responses, resp_flag, state)
+                location = state[0]
+                heading = state[1]
+                prev_loc = (location[0] - const.heading_map[heading][0], 
+                location[1] - const.heading_map[heading][1])
+                set_state(state, location, heading)
+                post("Reset map?", out)
+                if get_resp(responses, out, resp_flag).lower() == 'y':
+                    graph, tool, djik = pln.init_plan(location, heading, 
+                                                      prev_loc)
+                    tool.exit()
+                    tool = Visualizer(graph)
+                active = False
+                graph.driven_connection(prev_loc, location, heading)
+                set_flags_to(flags, [True for _ in range(10)])
+                post("Enter new command", out)
+                while flags == [True for _ in range(10)]:
+                    continue
+            #Act on flags which do not prescribe a behavior
             if flags[const.QUIT]:
                 break
             if flags[const.CLEAR]:
@@ -111,8 +130,10 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
             #Execute a line follow if possible on the current heading
             if graph != None:
                 act.center_block(ultraSense, location, heading, graph, out)
-                if (graph.get_intersection(location).get_blockages()[heading] !=
-                    const.BLK and active):
+                temp_inters = graph.get_intersection(location)
+                if (temp_inters != None and 
+                    graph.get_intersection(location).get_blockages()[heading] !=const.BLK 
+                    and active):
                     location, prev_loc, heading = act.adv_line_follow(driveSys, 
                                                                       IRSensor, 
                                                                       ultraSense, 

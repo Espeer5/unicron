@@ -62,7 +62,7 @@ def line_follow(driveSys, IRSense, ultraSense, tool):
 
 
 def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, graph, out):
-    """ This behavior of the robot performs an advacned line follow, however,
+    """ This behavior of the robot performs an advanced line follow, however,
         if detects an object immediately in its path with the ultrasound
         sensors, it performs a 180 degree U-turn. If it gets stuck on a road
         for more than 3 U-turns, it will wait until an block blocking the

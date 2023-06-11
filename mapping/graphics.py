@@ -135,5 +135,5 @@ class Visualizer:
         """
         Closes out the graphics window opened by visualizer.show()
         """
-        plt.close()
+        plt.clf()
         

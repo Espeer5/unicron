@@ -199,7 +199,7 @@ def kill_robot(robot_thread):
 
 
 def kill_ros(rosthread):
-    """Upon the command from the UI, stops all activeities of the ros thread, 
+    """Upon the command from the UI, stops all activities of the ros thread, 
     shutting down the node and closing the ros thread.
     """
     ctypes.pythonapi.PyThreadState_SetAsyncExc(
@@ -250,5 +250,5 @@ def set_sigs(root, flags, entry, out, robot_thread, ros_thread):
     for i in range(len(flags)):
         if temp[i] != -1:
             flags[i] = temp[i]
-        if flags[6] == 1:
-                on_close(root, robot_thread, ros_thread)
+    if flags[6]:
+        on_close(root, robot_thread, ros_thread)

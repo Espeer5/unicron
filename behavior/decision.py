@@ -13,6 +13,7 @@ import constants as const
 import driving.actions as act
 import mapping.checkMap as checks
 import mapping.planning as pln 
+from math import dist
 from mapping.MapGraph import unb_head, closest_unexp_inters
 from interface.ui_util import post
 
@@ -156,6 +157,22 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
     done = False
     cmd = flags[const.DATA]
     
+    # Get new destination
+    dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
+    if dest == location:
+        done = True
+        print("Goal reached @ " + str(dest) + "!")
+        return (path, heading, graph, location, done, subtarget) 
+    if cmd == None:
+        raise Exception("Invalid command")
+
+    if graph.contains(dest):
+        djik.reset(dest)
+        path = djik.gen_path(location)
+    elif subtarget != None:
+        djik.reset(subtarget)
+        path = djik.gen_path(location)
+
     # Follow pre-determined path
     if path != []:
         print("Following a Djikstra path...")
@@ -165,21 +182,36 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
         path_elem = path.pop(0)
         direction = pln.to_head(heading, path_elem, graph, location)
 
+        # # Check if we should ignore djik to explore a potentially better inters
+        # if not graph.contains(dest):
+        #     directed_dir = pln.l_r_s_to_target(graph.get_intersection(location),
+        #                                     heading, dest)
+        #     ignore_djik = False
+        #     for i in range(1, 3): # purposefully does not include 3
+        #         condition = None
+        #         left_loc = (location[0] + const.heading_map[(heading + i) % 8][0], location[1] + const.heading_map[(heading + i) % 8][1])
+        #         right_loc = (location[0] + const.heading_map[(heading + i) % 8][0], location[1] + const.heading_map[(heading - i) % 8][1])
+        #         if directed_dir == "LEFT" and dist(dest, left_loc) < dist(dest, location):
+        #             condition = graph.get_intersection(location).get_streets()[(heading + i) % 8]
+        #         elif directed_dir == "RIGHT" and dist(dest, right_loc) < dist(dest, location):
+        #             condition = graph.get_intersection(location).get_streets()[(heading - i) % 8]
+        #         if condition == const.UNK or condition == const.UND:
+        #             ignore_djik = True
+        #             break
+        #     if ignore_djik:
+        #         print("Ignoring Djik!")
+        #         heading = explore_turn(driveSys, IRSensor, ultraSense,
+        #                                directed_dir, graph, location, heading,
+        #                                out, responses, resp_flag)
+        #         path = []
+        #         return (path, heading, graph, location, done, subtarget)
+    
         while heading != path_elem:
             heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
                                    graph, location, heading, out, responses,
                                    resp_flag)
         time.sleep(.02)
         return (path, heading, graph, location, done, subtarget)
-
-    # Get new destination
-    dest = (int(cmd.split(",")[0]), int(cmd.split(",")[1]))
-    if dest == location:
-        done = True
-        print("Goal reached @ " + str(dest) + "!")
-        return (path, heading, graph, location, done, subtarget) 
-    if cmd == None:
-        raise Exception("Invalid command")
     
     # Recalculate Djikstra's if the goal exists
     if graph.contains(dest):

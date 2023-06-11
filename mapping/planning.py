@@ -12,7 +12,7 @@ import constants as const
 from mapping.graphics import Visualizer
 import pickle
 from math import dist, inf
-from constants import heading_map, UNK, UND
+from constants import heading_map, UNK, UND, DRV
 
 
 class Djikstra:
@@ -232,11 +232,11 @@ def l_r_s_to_target(inter, heading, target):
         if dir_to_target == "LEFT":
             condition = inter.get_streets()[(heading + i) % 8]
             print("Inter " + str(inter.get_location()) + " at heading " + str(heading + i) + " is " + str(condition))
-            if condition == UND or condition == UNK:
+            if condition == UND or condition == UNK or condition == DRV:
                 return "LEFT"
         else:
             condition = inter.get_streets()[(heading - i) % 8]
-            if condition == UND or condition == UNK:
+            if condition == UND or condition == UNK or condition == DRV:
                 return "RIGHT"
 
     # Direction does not have unexplored roads so switch directions
@@ -253,6 +253,7 @@ def closest_subtarget(graph, location, heading, target, djik):
     unexp_inters = graph.unexp_inters()
     if unexp_inters == []:
         raise ("No unexplored intersections could be found...robot stuck")
+    print("Unexplored inters " + str(unexp_inters))
     closest_subtarget = location
     closest_distance = dist(location, target)
     closest_path_len = 0
@@ -263,7 +264,6 @@ def closest_subtarget(graph, location, heading, target, djik):
         subheading = heading
         if len(path) != 0:
             subheading = path[-1]
-        print("Subtarget " + str(subtarget) + " has Subheading " + str(subheading))
         # determine distances of adjacent intersections to target
         # make sure that unexplored streets exist in possible directions
         straight_loc = (subtarget[0] + heading_map[subheading][0],
@@ -276,31 +276,28 @@ def closest_subtarget(graph, location, heading, target, djik):
         distances = []
         if (streets[subheading] == UND or streets[subheading] == UNK):
             distances.append(dist(straight_loc, target))
-            #print("straight dist added")
-        ### MAKING THIS GO 1-2 is usually more optimatal...I think
-        for i in range(1, 4):
-            if (streets[(subheading + i) % 8] == UND or streets[(subheading + i) % 8] == UNK):
-                distances.append(dist(left_loc, target))
-                #print("left dist added")
-                break
-        for i in range(1, 3):
-            if (streets[(subheading - i) % 8] == UND or streets[(subheading - i) % 8] == UNK):
-                distances.append(dist(right_loc, target))
-                #print("right dist added")
-                break
-        # for i in range(8):
-        #     if streets[i] == UND or streets[i] == UNK:
-        #         distances.append(dist(subtarget[0] + heading_map[(subheading + i) % 8], target))
-        print("Distances at " + str(subtarget) + ": " + str(distances))
+        for i in range(0, 8):
+            if i != 4:
+                if (streets[(subheading + i) % 8] == UND or streets[(subheading + i) % 8] == UNK):
+                    distances.append(dist(left_loc, target))
+        #print("Distances at " + str(subtarget) + ": " + str(distances))
         # check if there is a new closest option
+        print("subtarget " + str(subtarget) + " has path " + str(path))
         for distance in distances:
             if distance < closest_distance:
+                print("closest dist " + str(distance) + " @ " + str(subtarget))
                 closest_subtarget = subtarget
                 closest_distance = distance
                 closest_path_len = len(path)
-                print("New Optimal subtarget: " + str(subtarget))
-            if (distance == closest_distance and len(path) < closest_path_len):
-                print("DERR DERR DERRRRR")
+            elif (distance == closest_distance and len(path) < closest_path_len):
+                print("DERR DERR DERRRRR 'TISM TAKEOVER")
+                print("Replacing subtarget " + str(closest_subtarget) + " with " + str(subtarget))
+                closest_subtarget = subtarget
+                closest_distance = distance
+                closest_path_len = len(path)
+                
+                print("DERR DERR DERRRRR 'TISM TAKEOVER")
+                print("DERR DERR DERRRRR 'TISM TAKEOVER")
     return closest_subtarget
 
 

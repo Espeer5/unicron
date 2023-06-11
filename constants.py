@@ -124,6 +124,7 @@ CMD_DICT = {
         "save": [-1, -1, -1, -1, True, -1, False, False, False],
         "quit": [-1, -1, -1, -1, -1, -1, True, -1, False],
         "clear": [-1, -1, -1, -1, -1, -1, False, True, False],
+        "reset": [False for i in range(9)]
     }
 
 #Locations of the images needed to display in the GUI, and the shared image file 
