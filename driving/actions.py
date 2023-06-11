@@ -44,7 +44,8 @@ def line_follow(driveSys, IRSense, ultraSense, tool):
         reading = IRSense.read()
         Ntime = time.time()
         ids.update(time.time())
-        if reading == (1, 1, 1) and ids.check(Ntime) and (Ntime - start_time) >= .5:
+        if reading == ((1, 1, 1) and ids.check(Ntime) 
+                       and (Ntime - start_time) >= .5):
             driveSys.stop()
             time.sleep(1.2)
             if tool != None:
@@ -61,7 +62,8 @@ def line_follow(driveSys, IRSense, ultraSense, tool):
 	        const.FEEDBACK_TABLE.get(reading)[1])
 
 
-def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, graph, out):
+def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, 
+                    graph, out):
     """ This behavior of the robot performs an advanced line follow, however,
         if detects an object immediately in its path with the ultrasound
         sensors, it performs a 180 degree U-turn. If it gets stuck on a road
@@ -73,7 +75,8 @@ def adv_line_follow(driveSys, IRSensor, ultraSense, tool, location, heading, gra
 
     #Execute a line follow, if sudden blockage encountered, perform U-Turn
     while line_follow(driveSys, IRSensor, ultraSense, tool) != const.SUCCESS:
-        heading, prev_loc = exec_Uturn(driveSys, IRSensor, location, heading, out)
+        heading, prev_loc = exec_Uturn(driveSys, IRSensor, location, heading, 
+                                       out)
         num_Uturns += 1
         if num_Uturns >= 2:
             while ultraSense.read()[1] < 0.35:
@@ -190,8 +193,8 @@ def past_end():
 
 def find_blocked_streets(ultraSense, location, heading, graph, out):
     """
-    Search for blocked street ahead only if street ahead exists. Updates the graph
-    and returns a boolean whether it found any blocked streets.
+    Search for blocked street ahead only if street ahead exists. Updates the 
+    graph and returns a boolean whether it found any blocked streets.
     """
 
     # allowable distance until object blocks a street

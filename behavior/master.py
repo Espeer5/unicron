@@ -170,8 +170,7 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
             # we can assume no 45 degree roads exist approaching intersection
             graph.no_connection(location, (heading + 3) % 8)
             graph.no_connection(location, (heading + 5) % 8)
-            checks.check_end(IRSensor, graph, location, heading, out, responses,
-                             resp_flag, state)
+            checks.check_end(IRSensor, graph, location, heading, out, responses, resp_flag, state)
 
             #Execute a robot behavior based on the set flags
             if flags[const.STP_FLAG]:

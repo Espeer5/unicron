@@ -12,7 +12,7 @@ import tkinter as tk
 from PIL import ImageTk, Image
 import threading
 import ctypes
-from behavior.master import master
+from behavior.master import *
 from interface.ui_util import *
 import constants as const
 import ros

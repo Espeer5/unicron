@@ -43,9 +43,9 @@ def check_end(sensor, graph, location, heading, out, responses, resp_flag, state
     intersection when the robot arrives at an intersection, check for 
     consistency, and updates the intersection state in the graph.
     """
+    print("FUCKFUCKFUCKFUCKFUCKFUCK")
     if sensor.read() == (0, 0, 0):
-        if (graph.get_intersection(location).check_connection(heading) 
-            not in [const.UNK, const.NNE]):
+        if graph.get_intersection(location).check_connection(heading) not in [const.UNK, const.NNE]:
             post("Incorrect angle measured! Help!", out)
             init_state(out, responses, resp_flag, state)
             location = state[0]

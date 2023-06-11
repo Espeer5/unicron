@@ -1,8 +1,9 @@
-# ||Normstorm||
-## Autonomous Exploration Rover
-
+![image](interface/images/ns_tbar.png)
 
 The Normstorm is a 2 wheeled autonomous rover designed to explore maps of a certain format, created by Edward Speer and Garrett Knuf for Caltech ME/CS/EE 129 in Spring of 2023. The bot consists of a chasis with two rear drive motors which provide power to the two rear wheels, and a front roller ball. The bot sees the world through 3 front mounted IR sensors which look at the floor, and 3 ultrasound detectors which face forwards, left, and right from the front of the bot. Robot control is done by a Raspberry pi connected to the motor controller and both sets of sensor hardware through GPIO.
+
+### Check out the latest map the NormStorm explored!
+![image](interface/images/map.png)
 
 ### System Specs:
 - Debian GNU/Linux 11
@@ -40,3 +41,4 @@ The robot accepts the following commands into the GUI:
 - Pause: Upon reaching the next intersection, pause the robot
 - Save: Saves the current map data structure to a pickle file upon reaching an intersection
 - Clear: Removes all blockages from the current map
+- Reset: (Must be called while in explore mode) - Allows the user to manually reset the robot heading and location from within explore mode, and select whether or not te clear the map

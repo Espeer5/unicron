@@ -14,7 +14,7 @@ import driving.actions as act
 import mapping.checkMap as checks
 import mapping.planning as pln 
 from math import dist
-from mapping.MapGraph import unb_head, closest_unexp_inters
+from mapping.MapGraph import unb_head
 from interface.ui_util import post
 
 
@@ -161,7 +161,7 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
     if dest == location:
         done = True
         print("Goal reached @ " + str(dest) + "!")
-        return (path, heading, graph, location, done, subtarget) 
+        return (path, heading, graph, location, done, subtarget)
     
     # Determine is destination is unreachable
     if graph.is_complete():
@@ -215,21 +215,21 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
             subtarget = None
             return (path, heading, graph, location, done, subtarget)
 
-        # If path cannot be found to subtarget, reroute
+    # If path cannot be found to subtarget, reroute
+    if path == []:
+        subtarget = pln.closest_subtarget(graph, location, heading, dest, djik)
+        djik.reset(subtarget)
+        path = djik.gen_path(location)
+        # If path still cannot be found then we need to clear blockages
         if path == []:
-            subtarget = pln.closest_subtarget(graph, location, heading, dest, djik)
+            post("Stuck! Clearing Blockages", out)
+            graph.clear_blockages()
             djik.reset(subtarget)
             path = djik.gen_path(location)
-            # If path still cannot be found then we need to clear blockages
-            if path == []:
-                post("Stuck! Clearing Blockages", out)
-                graph.clear_blockages()
-                djik.reset(subtarget)
-                path = djik.gen_path(location)
-                # If path still cannot be found then we are stuck
-                post("Norman is stuck! No route to " + str(dest) + " can be found", out)
-                done = True
-                return (path, heading, graph, location, done, subtarget)
+            # If path still cannot be found then we are stuck
+            post("Norman is stuck! No route to " + str(dest) + " can be found", out)
+            done = True
+            return (path, heading, graph, location, done, subtarget)
         
     post("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...", out)
 
