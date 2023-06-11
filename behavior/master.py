@@ -93,25 +93,6 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
 
     try:
         while True:
-            if flags == const.CMD_DICT['reset']:
-                init_state(out, responses, resp_flag, state)
-                location = state[0]
-                heading = state[1]
-                prev_loc = (location[0] - const.heading_map[heading][0], 
-                location[1] - const.heading_map[heading][1])
-                set_state(state, location, heading)
-                post("Reset map?", out)
-                if get_resp(responses, out, resp_flag).lower() == 'y':
-                    graph, tool, djik = pln.init_plan(location, heading, 
-                                                      prev_loc)
-                    tool.exit()
-                    tool = Visualizer(graph)
-                active = False
-                graph.driven_connection(prev_loc, location, heading)
-                set_flags_to(flags, [True for _ in range(10)])
-                post("Enter new command", out)
-                while flags == [True for _ in range(10)]:
-                    continue
             #Act on flags which do not prescribe a behavior
             if flags[const.QUIT]:
                 break
@@ -132,7 +113,7 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
                 act.center_block(ultraSense, location, heading, graph, out)
                 temp_inters = graph.get_intersection(location)
                 if (temp_inters != None and 
-                    graph.get_intersection(location).get_blockages()[heading] !=const.BLK 
+                    graph.get_intersection(location).get_blockages()[heading] != const.BLK 
                     and active):
                     location, prev_loc, heading = act.adv_line_follow(driveSys, 
                                                                       IRSensor, 
@@ -146,11 +127,19 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
                     just_pulled_up = True
                 elif active:
                     path = []
-                    direction = pln.l_r_nearest_rd(graph.get_intersection(location), heading)
-                    print("Norman cannot drive down blocked road")
-                    heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
-                                graph, location, heading, out, responses,
-                                resp_flag)
+                    turn_count = 0
+                    while graph.get_intersection(location).get_blockages()[heading] == const.BLK:
+                        post("Norman cannot drive down blocked road", out)
+                        print("Norman cannot drive down blocked road")
+                        if turn_count < 3:
+                            direction = pln.l_r_nearest_rd(graph.get_intersection(location), heading)
+                            print("Nearest road to the " + direction)
+                            heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
+                                        graph, location, heading, out, responses,
+                                        resp_flag)
+                            turn_count += 1
+                        else:
+                            post("Waiting for blockage to be removed ", out)
                     location, prev_loc, heading = act.adv_line_follow(driveSys, 
                                                                       IRSensor, 
                                                                       ultraSense, 
@@ -160,8 +149,6 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
                                                                       graph, out)
                     set_state(state, location, heading)
                     act.pullup(driveSys)
-                    just_pulled_up = True
-                    # Clear blockages????
             else:
                 location, prev_loc, heading = act.adv_line_follow(driveSys, 
                                                                   IRSensor, 
@@ -183,13 +170,30 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
             # we can assume no 45 degree roads exist approaching intersection
             graph.no_connection(location, (heading + 3) % 8)
             graph.no_connection(location, (heading + 5) % 8)
-            checks.check_end(IRSensor, graph, location, heading)
+            checks.check_end(IRSensor, graph, location, heading, out, responses,
+                             resp_flag, state)
 
             #Execute a robot behavior based on the set flags
             if flags[const.STP_FLAG]:
                 while not flags[const.STP]:
                     continue
                 flags[const.STP] = False
+            if flags[const.RESET]:
+                init_state(out, responses, resp_flag, state)
+                location = state[0]
+                heading = state[1]
+                prev_loc = (location[0] - const.heading_map[heading][0], 
+                location[1] - const.heading_map[heading][1])
+                set_state(state, location, heading)
+                post("Reset map?", out)
+                if get_resp(responses, out, resp_flag).lower() == 'y':
+                    graph, tool, djik = pln.init_plan(location, heading, 
+                                                      prev_loc)
+                    tool.exit()
+                    tool = Visualizer(graph)
+                graph.driven_connection(prev_loc, location, heading)
+                flags[const.RESET] = False
+                post("Reset complete", out)
             time.sleep(.2)
             if flags[const.GL_FLAG]:
                 while flags[const.DATA] == None:
@@ -208,7 +212,6 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
                                                                    subtarget)
                 set_state(state, location, heading)
                 active = not done
-                #just_pulled_up = False
                 continue
             elif flags[const.EXP_FLAG]:
                 active = True

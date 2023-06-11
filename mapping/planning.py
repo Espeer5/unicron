@@ -12,7 +12,7 @@ import constants as const
 from mapping.graphics import Visualizer
 import pickle
 from math import dist, inf
-from constants import heading_map, UNK, UND, DRV
+from constants import heading_map, UNK, UND, DRV, UNB, BLK
 
 
 class Djikstra:
@@ -185,12 +185,13 @@ def l_r_unex(inter, heading):
 def l_r_nearest_rd(inter, heading):
     """Determines whether turning left or right if better for finding nearest road"""
     l_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
-    r_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
-    if const.UND in l_list:
-        if const.UND in r_list:
-            if r_list.index(const.UND) < l_list.index(const.UND):
-                return "LEFT"
-    return "RIGHT"
+    r_list = [inter.check_connection((heading - i) % 8) for i in range(4)]
+    for i in range(8):
+        if l_list[i] == const.UND or l_list[i] == const.DRV:
+            return "LEFT"
+        elif r_list[i] == const.UND or r_list[i] == const.DRV:
+            return "RIGHT"
+    return None
 
 
 def l_r_unb(inter, heading):
@@ -220,7 +221,7 @@ def l_r_s_to_target(inter, heading, target):
 
     if dist(straight_loc, target) <= dist(left_loc, target) and \
         dist(straight_loc, target) <= dist(right_loc, target) and \
-        inter.get_streets()[heading] == UND:
+        inter.get_streets()[heading] == UND and inter.get_blockages()[heading] == UNB:
         return "STRAIGHT"
     
     dir_to_target = "LEFT"
@@ -231,12 +232,11 @@ def l_r_s_to_target(inter, heading, target):
     for i in range(1,4):
         if dir_to_target == "LEFT":
             condition = inter.get_streets()[(heading + i) % 8]
-            print("Inter " + str(inter.get_location()) + " at heading " + str(heading + i) + " is " + str(condition))
-            if condition == UND or condition == UNK or condition == DRV:
+            if (condition == UND or condition == UNK or condition == DRV) and inter.get_blockages()[(heading + i) % 8] == UNB:
                 return "LEFT"
         else:
             condition = inter.get_streets()[(heading - i) % 8]
-            if condition == UND or condition == UNK or condition == DRV:
+            if (condition == UND or condition == UNK or condition == DRV) and inter.get_blockages()[(heading + i) % 8] == UNB:
                 return "RIGHT"
 
     # Direction does not have unexplored roads so switch directions
@@ -254,9 +254,9 @@ def closest_subtarget(graph, location, heading, target, djik):
     if unexp_inters == []:
         raise ("No unexplored intersections could be found...robot stuck")
     print("Unexplored inters " + str(unexp_inters))
-    closest_subtarget = location
-    closest_distance = dist(location, target)
-    closest_path_len = 0
+    closest_subtarget = None
+    closest_distance = inf
+    closest_path_len = inf
     for subtarget in unexp_inters:
         # get heading the robot will face if it travels to the subtarget
         djik.reset(subtarget)
@@ -273,31 +273,35 @@ def closest_subtarget(graph, location, heading, target, djik):
         right_loc = (subtarget[0] + heading_map[(subheading - 2) % 8][0],
                      subtarget[1] + heading_map[(subheading - 2) % 8][1])
         streets = graph.get_intersection(location).get_streets()
+        blockages = graph.get_intersection(location).get_blockages()
         distances = []
-        if (streets[subheading] == UND or streets[subheading] == UNK):
+        if (streets[subheading] == UND or streets[subheading] == UNK) and blockages[subheading] == UNB:
             distances.append(dist(straight_loc, target))
         for i in range(0, 8):
             if i != 4:
-                if (streets[(subheading + i) % 8] == UND or streets[(subheading + i) % 8] == UNK):
-                    distances.append(dist(left_loc, target))
-        #print("Distances at " + str(subtarget) + ": " + str(distances))
+                condition = streets[(subheading + i) % 8]
+                blockage = blockages[(subheading + i) % 8]
+                if (condition == UND or condition == UNK) and blockage == UNB:
+                    if i % 2 != 0:
+                        distances.append(dist(left_loc, target))
+                    else:
+                        distances.append(dist(left_loc, target))
         # check if there is a new closest option
-        print("subtarget " + str(subtarget) + " has path " + str(path))
+        #print("subtarget " + str(subtarget) + " has path " + str(path))
+        print("CHECKING SUB-T " + str(subtarget))
+        print("distances: " + str(distances))
         for distance in distances:
             if distance < closest_distance:
-                print("closest dist " + str(distance) + " @ " + str(subtarget))
                 closest_subtarget = subtarget
                 closest_distance = distance
                 closest_path_len = len(path)
-            elif (distance == closest_distance and len(path) < closest_path_len):
-                print("DERR DERR DERRRRR 'TISM TAKEOVER")
+                print(str(subtarget) + " has closest dist " + str(distance))
+            elif distance == closest_distance and len(path) < closest_path_len:
                 print("Replacing subtarget " + str(closest_subtarget) + " with " + str(subtarget))
                 closest_subtarget = subtarget
                 closest_distance = distance
                 closest_path_len = len(path)
-                
-                print("DERR DERR DERRRRR 'TISM TAKEOVER")
-                print("DERR DERR DERRRRR 'TISM TAKEOVER")
+    print("TARG: " + str(closest_subtarget))
     return closest_subtarget
 
 

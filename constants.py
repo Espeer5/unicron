@@ -111,20 +111,21 @@ DISP_MAP = 5
 QUIT = 6
 CLEAR = 7
 REPLAN = 8
-DATA = 9
+RESET = 9
+DATA = 10
 
 # Command:Flag mappings
 CMD_DICT = {
-        "pause": [True, False, True, False, False, False, False, False, False],
-        "explore": [True, False, False, True, False, -1, False, False, False],
-        "goal": [False, True, False, False, False, -1, False, False, False],
-        "show": [-1, -1, -1, -1, -1, True, False, False, False],
-        "stepping": [-1, -1, True, -1, -1, -1, False, False, False],
-        "step": [-1, -1, -1, True, -1, -1, False, False, False],
-        "save": [-1, -1, -1, -1, True, -1, False, False, False],
-        "quit": [-1, -1, -1, -1, -1, -1, True, -1, False],
-        "clear": [-1, -1, -1, -1, -1, -1, False, True, False],
-        "reset": [False for i in range(9)]
+        "pause": [True, False, True, False, False, False, False, False, False, -1],
+        "explore": [True, False, False, True, False, -1, False, False, False, -1],
+        "goal": [False, True, False, False, False, -1, False, False, False, -1],
+        "show": [-1, -1, -1, -1, -1, True, False, False, False, -1],
+        "stepping": [-1, -1, True, -1, -1, -1, False, False, False, -1],
+        "step": [-1, -1, -1, True, -1, -1, False, False, False, -1],
+        "save": [-1, -1, -1, -1, True, -1, False, False, False, -1],
+        "quit": [-1, -1, -1, -1, -1, -1, True, -1, False, -1],
+        "clear": [-1, -1, -1, -1, -1, -1, False, True, False, -1],
+        "reset": [-1, -1, -1, -1, -1, -1, -1, -1, -1, 1]
     }
 
 #Locations of the images needed to display in the GUI, and the shared image file 

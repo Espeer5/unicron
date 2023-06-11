@@ -204,7 +204,7 @@ def find_blocked_streets(ultraSense, location, heading, graph, out):
         if inters != None:
             # filter ultrasound readings because the sensors suck
             readings = []
-            filter_steps = 1
+            filter_steps = 4
             for i in range(filter_steps):
                 time.sleep(0.06)
                 readings.append(ultraSense.read())
@@ -266,7 +266,7 @@ def center_block(ultraSense, location, heading, graph, out):
         if inters != None:
             # filter ultrasound readings because the sensors suck
             readings = []
-            filter_steps = 1
+            filter_steps = 4
             for i in range(filter_steps):
                 time.sleep(0.06)
                 readings.append(ultraSense.read())

@@ -38,7 +38,7 @@ def check_head(direction, graph, location, heading, orig_heading, ang, out,
     return (heading, ang)
 
 
-def check_end(sensor, graph, location, heading):
+def check_end(sensor, graph, location, heading, out, responses, resp_flag, state):
     """ Checks the street exploration status of the road at the far end of an 
     intersection when the robot arrives at an intersection, check for 
     consistency, and updates the intersection state in the graph.
@@ -46,11 +46,23 @@ def check_end(sensor, graph, location, heading):
     if sensor.read() == (0, 0, 0):
         if (graph.get_intersection(location).check_connection(heading) 
             not in [const.UNK, const.NNE]):
-            raise Exception("Expected road missing! Aborting")
+            post("Incorrect angle measured! Help!", out)
+            init_state(out, responses, resp_flag, state)
+            location = state[0]
+            heading = state[1]
+            prev_loc = (location[0] - const.heading_map[heading][0], 
+            location[1] - const.heading_map[heading][1])
+            set_state(state, location, heading)
         graph.no_connection(location, heading)
     else:
         inter = graph.get_intersection(location)
         if inter.check_connection(heading) == const.NNE:
-            raise Exception("Road detected where none exists!")
+            post("Incorrect angle measured! Help!", out)
+            init_state(out, responses, resp_flag, state)
+            location = state[0]
+            heading = state[1]
+            prev_loc = (location[0] - const.heading_map[heading][0], 
+            location[1] - const.heading_map[heading][1])
+            set_state(state, location, heading)
         if inter.check_connection(heading) != const.DRV:
             graph.get_intersection(location).set_connection(heading, const.UND)

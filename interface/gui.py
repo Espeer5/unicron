@@ -12,7 +12,7 @@ import tkinter as tk
 from PIL import ImageTk, Image
 import threading
 import ctypes
-from behavior.master import *
+from behavior.master import master
 from interface.ui_util import *
 import constants as const
 import ros
@@ -30,7 +30,7 @@ def run_gui():
     
     #Initialize shared variables for thread communication
     messages = []
-    flags = [False for _ in range(10)]
+    flags = [False for _ in range(11)]
     responses = []
     resp_flag = [False]
     state = [(None, None), None]
