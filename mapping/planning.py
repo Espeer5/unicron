@@ -184,8 +184,8 @@ def l_r_unex(inter, heading):
 
 def l_r_nearest_rd(inter, heading):
     """Determines whether turning left or right if better for finding nearest road"""
-    l_list = [inter.check_connection((heading + i) % 8) for i in range(4)]
-    r_list = [inter.check_connection((heading - i) % 8) for i in range(4)]
+    l_list = [inter.check_connection((heading + i) % 8) for i in range(1, 5)]
+    r_list = [inter.check_connection((heading - i) % 8) for i in range(1, 5)]
     for i in range(8):
         if l_list[i] == const.UND or l_list[i] == const.DRV:
             return "LEFT"
@@ -232,11 +232,11 @@ def l_r_s_to_target(inter, heading, target):
     for i in range(1,4):
         if dir_to_target == "LEFT":
             condition = inter.get_streets()[(heading + i) % 8]
-            if (condition == UND or condition == UNK or condition == DRV) and inter.get_blockages()[(heading + i) % 8] == UNB:
+            if (condition == UND or condition == UNK) and inter.get_blockages()[(heading + i) % 8] == UNB:
                 return "LEFT"
         else:
             condition = inter.get_streets()[(heading - i) % 8]
-            if (condition == UND or condition == UNK or condition == DRV) and inter.get_blockages()[(heading + i) % 8] == UNB:
+            if (condition == UND or condition == UNK) and inter.get_blockages()[(heading - i) % 8] == UNB:
                 return "RIGHT"
 
     # Direction does not have unexplored roads so switch directions
@@ -266,30 +266,24 @@ def closest_subtarget(graph, location, heading, target, djik):
             subheading = path[-1]
         # determine distances of adjacent intersections to target
         # make sure that unexplored streets exist in possible directions
-        straight_loc = (subtarget[0] + heading_map[subheading][0],
-                        subtarget[1] + heading_map[subheading][1])
-        left_loc = (subtarget[0] + heading_map[(subheading + 2) % 8][0],
-                    subtarget[1] + heading_map[(subheading + 2) % 8][1])
-        right_loc = (subtarget[0] + heading_map[(subheading - 2) % 8][0],
-                     subtarget[1] + heading_map[(subheading - 2) % 8][1])
         streets = graph.get_intersection(location).get_streets()
         blockages = graph.get_intersection(location).get_blockages()
         distances = []
-        if (streets[subheading] == UND or streets[subheading] == UNK) and blockages[subheading] == UNB:
-            distances.append(dist(straight_loc, target))
         for i in range(0, 8):
             if i != 4:
                 condition = streets[(subheading + i) % 8]
                 blockage = blockages[(subheading + i) % 8]
-                if (condition == UND or condition == UNK) and blockage == UNB:
+                if (condition == UND or condition == UNK or condition == DRV) and blockage == UNB:
+                    new_loc = (subtarget[0] + heading_map[i][0], subtarget[1] + heading_map[i][1])
                     if i % 2 != 0:
-                        distances.append(dist(left_loc, target))
+                        distances.append(dist(new_loc, target) + 0.1)
                     else:
-                        distances.append(dist(left_loc, target))
+                        distances.append(dist(new_loc, target))
         # check if there is a new closest option
         #print("subtarget " + str(subtarget) + " has path " + str(path))
         print("CHECKING SUB-T " + str(subtarget))
-        print("distances: " + str(distances))
+        #print("distances: " + str(distances))
+
         for distance in distances:
             if distance < closest_distance:
                 closest_subtarget = subtarget
@@ -302,6 +296,8 @@ def closest_subtarget(graph, location, heading, target, djik):
                 closest_distance = distance
                 closest_path_len = len(path)
     print("TARG: " + str(closest_subtarget))
+    if subtarget == location:
+        return None
     return closest_subtarget
 
 

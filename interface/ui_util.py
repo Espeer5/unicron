@@ -71,4 +71,5 @@ def set_flags_to(flags, target):
     the UI thread or the ROS thread.
     """
     for i in range(len(flags)):
-        flags[i] = target[i]
+        if target[i] != -1:
+            flags[i] = target[i]

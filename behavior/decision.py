@@ -87,7 +87,7 @@ def auto_inters(driveSys, sensor, graph, heading, location, ultraSense, out,
 
         
 def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading, 
-              djik, prev_loc, out, responses, resp_flag):
+              djik, prev_loc, out, responses, resp_flag, state):
     """Uses Djikstra's algorithm to intelligently explore the map by taking
     efficient paths to unexplored locations
     """
@@ -95,9 +95,20 @@ def auto_djik(driveSys, IRSensor, ultraSense, path, graph, location, heading,
     if path != []:
         path_elem = path.pop(0)
         direction = pln.to_head(heading, path_elem, graph, location)
+        num_turns = 0
         while heading != path_elem:
+            if num_turns > 2:
+                post("Bad angle was read, resetting", out)
+                init_state(out, responses, resp_flag, state)
+                location = state[0]
+                heading = state[1]
+                prev_loc = (location[0] - const.heading_map[heading][0], 
+                location[1] - const.heading_map[heading][1])
+                set_state(state, location, heading)
+                break
             angle = abs(act.exec_turn(driveSys, IRSensor, direction))
             heading = (heading + const.dirMap[direction[0]][1] * angle / 45) % 8
+            num_turns += 1
         time.sleep(.02)
         return (path, graph, location, heading)
     
@@ -175,6 +186,23 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
         djik.reset(dest)
         path = djik.gen_path(location)
         subtarget = dest
+        if path == []:
+            unexplored_inters = graph.unexp_inters()
+            stuck = True
+            for inter in unexplored_inters:
+                djik.reset(inter)
+                path = djik.gen_path(location)
+                if path != []:
+                    stuck = False
+                    break
+            if stuck:
+                graph.clear_blockages()
+                post("Stuck, clearing blockages", out)
+                if graph.unexp_inters() == []:
+                    post("Stuck", out)
+                    return (path, heading, graph, location, done, subtarget)
+                subtarget = None
+
     # Otherwise find nearest known intersection to target and drive there
     elif subtarget == None:
         subtarget = pln.closest_subtarget(graph, location, heading, dest, djik)
@@ -202,26 +230,24 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
         djik.reset(subtarget)
         path = djik.gen_path(location)
 
-        # If robot reaches subtarget, turn to optimal heading for destination
-        if location == subtarget:
-            post("Subtarget reached at " + str(subtarget), out)
-            direction = pln.l_r_s_to_target(graph.get_intersection(location),
-                                            heading, dest)
-            print("LRS to Target: " + direction)
-            if direction != "STRAIGHT":
-                heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
-                                        graph, location, heading, out, responses,
-                                        resp_flag)
-            subtarget = None
-            return (path, heading, graph, location, done, subtarget)
+    # If robot reaches subtarget, turn to optimal heading for destination
+    if location == subtarget:
+        post("Subtarget reached at " + str(subtarget), out)
+        direction = pln.l_r_s_to_target(graph.get_intersection(location),
+                                        heading, dest)
+        print("LRS to Target: " + direction)
+        if direction != "STRAIGHT":
+            heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
+                                    graph, location, heading, out, responses,
+                                    resp_flag)
+        subtarget = None
+        return (path, heading, graph, location, done, subtarget)
 
     # If path cannot be found to subtarget, reroute
     if path == []:
         subtarget = pln.closest_subtarget(graph, location, heading, dest, djik)
-        djik.reset(subtarget)
-        path = djik.gen_path(location)
         # If path still cannot be found then we need to clear blockages
-        if path == []:
+        if subtarget == None:
             post("Stuck! Clearing Blockages", out)
             graph.clear_blockages()
             djik.reset(subtarget)
@@ -230,6 +256,8 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
             post("Norman is stuck! No route to " + str(dest) + " can be found", out)
             done = True
             return (path, heading, graph, location, done, subtarget)
+        djik.reset(subtarget)
+        path = djik.gen_path(location)
         
     post("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...", out)
 

@@ -16,6 +16,7 @@ import socket
 import traceback
 from interface.ui_util import set_flags_to
 import constants as const
+from interface.ui_util import post
 
 from math import pi, sin, cos
 
@@ -28,7 +29,7 @@ from std_msgs.msg               import Empty
 #   Simple Node Class
 class SimpleNode(Node):
     # Initialization.
-    def __init__(self, name, state, flags_in):
+    def __init__(self, name, state, flags_in, out):
         # Initialize the node, naming it as specified
         super().__init__(name)
 
@@ -38,6 +39,7 @@ class SimpleNode(Node):
         self.theta = None
         self.time  = Time()
         self.flags = flags_in
+        self.out = out
 
         # Create the publisher for the pose information.
         self.pub = self.create_publisher(Pose, '~/pose', 10)
@@ -95,18 +97,22 @@ class SimpleNode(Node):
 
         # Report.
         self.get_logger().info("Received goal command (%d,%d)" % (xgoal,ygoal))
+        post(f"Received ROS Goal Command ({xgoal}, {ygoal})", self.out)
 
         # Inject the goal command into your robot thread, just as if
         # you had typed the goal command in the UI thread.
-        
         cmd = const.CMD_DICT['goal']
         cmd.append(f"{int(xgoal)},{int(ygoal)}")
+        cmd[const.DATA] = cmd[len(cmd) - 1]
+        print(cmd)
         set_flags_to(self.flags, cmd)
+        print(cmd)
 
     # Explore command callback.
     def cb_explore(self, msg):
         # Report.
         self.get_logger().info("Received explore command")
+        post("Received ros explore command", self.out)
         
         # Inject the explore command into your robot thread, just as
         # if you had typed the explore command in the UI thread.
@@ -120,12 +126,12 @@ class SimpleNode(Node):
 #
 #   Main ROS Thread Code
 #
-def runros(state, flags):
+def runros(state, flags, out):
     # Initialize ROS.
     rclpy.init()
 
     # Instantiate the simple node, named after the host name.
-    node = SimpleNode(socket.gethostname(), state, flags)
+    node = SimpleNode(socket.gethostname(), state, flags, out)
 
     # Spin the node until interrupted.
     try:

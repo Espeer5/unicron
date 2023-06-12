@@ -99,6 +99,7 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
             if flags[const.CLEAR]:
                 if graph != None:
                     graph.clear_blockages()
+                    post("Clearing blockages", out)
             if flags[const.SV_MAP]:
                 complete(graph, flags[const.DATA])
                 flags[const.SV_MAP] = False
@@ -124,11 +125,11 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
                                                                       graph, out)
                     set_state(state, location, heading)
                     act.pullup(driveSys)
-                    just_pulled_up = True
                 elif active:
                     path = []
                     turn_count = 0
                     while graph.get_intersection(location).get_blockages()[heading] == const.BLK:
+                        subtarget = None
                         post("Norman cannot drive down blocked road", out)
                         print("Norman cannot drive down blocked road")
                         if turn_count < 3:
@@ -184,19 +185,20 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
                 prev_loc = (location[0] - const.heading_map[heading][0], 
                 location[1] - const.heading_map[heading][1])
                 set_state(state, location, heading)
-                post("Reset map?", out)
+                post("Reset map (y/n)?", out)
                 if get_resp(responses, out, resp_flag).lower() == 'y':
                     graph, tool, djik = pln.init_plan(location, heading, 
                                                       prev_loc)
                     tool.exit()
                     tool = Visualizer(graph)
-                graph.driven_connection(prev_loc, location, heading)
+                    graph.driven_connection(prev_loc, location, heading)
                 flags[const.RESET] = False
                 post("Reset complete", out)
             time.sleep(.2)
             if flags[const.GL_FLAG]:
                 while flags[const.DATA] == None:
                     continue
+                active = True
                 path, heading, graph, location, done, subtarget = manual_djik(driveSys,
                                                                    IRSensor,
                                                                    ultraSense,
@@ -228,7 +230,7 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
                                                                heading, 
                                                                djik, 
                                                                prev_loc, out,
-                                                               responses, resp_flag)
+                                                               responses, resp_flag, state)
                     set_state(state, location, heading)
                 continue
         end(ultraSense, driveSys, io)

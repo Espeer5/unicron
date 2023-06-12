@@ -70,11 +70,15 @@ def run_gui():
 
     #Start the ROS worker thread.
     ros_thread = threading.Thread(name="ROSThread", 
-                                  target=lambda: ros.runros(state, flags))
+                                  target=lambda: ros.runros(state, flags, outs))
     ros_thread.start()
 
     #Start the robot thread, and bind the command input box to control it
-    robot_thread = create_rth(flags, outs, responses, resp_flag, state)
+    robot_thread = threading.Thread(name="RobotThread", \
+                                 target=master,
+                                 args=[flags, outs, responses, resp_flag, 
+                                       state])
+    robot_thread.start()
     cmd_entry(root, outs, flags, robot_thread, ros_thread)
     resp_entry(root, responses, resp_flag)
     
@@ -227,17 +231,6 @@ def cmp_input(entry, out):
         return sigs
     else:
         post("Invalid command", out)
-
-
-def create_rth(flags, outs, responses, resp_flag, state, map_num=None):
-    """ Initializes and starts up the robot control thread
-    """
-    robot_thread = threading.Thread(name="RobotThread", \
-                                 target=master,
-                                 args=[flags, outs, responses, resp_flag, 
-                                       state, map_num])
-    robot_thread.start()
-    return robot_thread
 
 
 def set_sigs(root, flags, entry, out, robot_thread, ros_thread):

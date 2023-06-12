@@ -116,9 +116,9 @@ DATA = 10
 
 # Command:Flag mappings
 CMD_DICT = {
-        "pause": [True, False, True, False, False, False, False, False, False, -1],
+        "pause": [-1, -1, True, False, -1, -1, -1, -1, -1, -1],
         "explore": [True, False, False, True, False, -1, False, False, False, -1],
-        "goal": [False, True, False, False, False, -1, False, False, False, -1],
+        "goal": [False, True, False, True, False, -1, False, False, False, -1],
         "show": [-1, -1, -1, -1, -1, True, False, False, False, -1],
         "stepping": [-1, -1, True, -1, -1, -1, False, False, False, -1],
         "step": [-1, -1, -1, True, -1, -1, False, False, False, -1],

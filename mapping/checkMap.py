@@ -7,7 +7,7 @@ Date: 6/3/23
 """
 
 import constants as const
-from interface.ui_util import post, get_resp
+from interface.ui_util import post, get_resp, init_state
 
 
 def check_head(direction, graph, location, heading, orig_heading, ang, out, 
@@ -27,7 +27,7 @@ def check_head(direction, graph, location, heading, orig_heading, ang, out,
         heading = orig_heading
         ang = from_orig * 45
         if inters.check_connection(heading) == const.UNK:
-            post(f"Correcting error... am I facing heading {heading}?", out)
+            post(f"Correcting error... am I facing heading {heading} (y/n)?", out)
             if(get_resp(responses, out, resp_flag).upper() == "N"):
                 post("Input true heading: ", out)
                 heading = int(get_resp(responses, out, resp_flag))
@@ -43,7 +43,6 @@ def check_end(sensor, graph, location, heading, out, responses, resp_flag, state
     intersection when the robot arrives at an intersection, check for 
     consistency, and updates the intersection state in the graph.
     """
-    print("FUCKFUCKFUCKFUCKFUCKFUCK")
     if sensor.read() == (0, 0, 0):
         if graph.get_intersection(location).check_connection(heading) not in [const.UNK, const.NNE]:
             post("Incorrect angle measured! Help!", out)

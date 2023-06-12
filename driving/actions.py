@@ -44,8 +44,7 @@ def line_follow(driveSys, IRSense, ultraSense, tool):
         reading = IRSense.read()
         Ntime = time.time()
         ids.update(time.time())
-        if reading == ((1, 1, 1) and ids.check(Ntime) 
-                       and (Ntime - start_time) >= .5):
+        if reading == (1, 1, 1) and ids.check(Ntime) and (Ntime - start_time) >= .5:
             driveSys.stop()
             time.sleep(1.2)
             if tool != None:
