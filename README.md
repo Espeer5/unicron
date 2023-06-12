@@ -4,6 +4,7 @@ The Normstorm is a 2 wheeled autonomous rover designed to explore maps of a cert
 
 ### Check out the latest map the NormStorm explored!
 ![image](interface/images/map.png)
+![image](norman.jpg)
 
 ### System Specs:
 - Debian GNU/Linux 11
