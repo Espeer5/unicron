@@ -7,14 +7,16 @@ Date: 6/6/23
 
 import textwrap
 
-MESSAGE_MEM = 4
+MESSAGE_MEM = 8
 
 def post(message, out):
     """Posts the given message to the GUI at the location indicated by the out 
     array
     """
     out[2].append(message)
-    out[0].itemconfig(out[1], text=get_messages(out[2]))
+    tex = get_messages(out[2])
+    print(tex)
+    out[0].itemconfig(out[1], text=tex)
 
 
 def get_messages(messages):
@@ -25,7 +27,7 @@ def get_messages(messages):
         messages = messages[-MESSAGE_MEM:]
     str = ""
     for mess in messages:
-        str += f"-> {textwrap.fill(mess, width=22)}\n"
+        str += f"-> {textwrap.fill(mess, width=35)}\n"
     return str
 
 def get_resp(responses, out, resp_flag):

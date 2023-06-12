@@ -99,14 +99,14 @@ def OSpace(root, messages):
     This function returns the output object shared between threads which allows 
     message posting to the GUI.
     """
-    OFrame = tk.Frame(root, width=X_SIZE/4, height=400)
+    OFrame = tk.Frame(root, width=X_SIZE/3 + 50, height=400)
     OFrame.pack()
-    OFrame.place(anchor='center', relx=.2, y=480)
-    OCanvas = tk.Canvas(OFrame, width=X_SIZE/3, height=400)
+    OFrame.place(anchor='center', relx=.25, y=480)
+    OCanvas = tk.Canvas(OFrame, width=X_SIZE/3 + 50, height=400)
     OCanvas.create_text(110, 30, text="Status Messages", fill="black", 
-                        font="Times 20 bold underline")
+                        font="Times 15 bold underline")
     text = OCanvas.create_text(110, 50, text=get_messages(messages), 
-                               fill="black", font="Times 15", anchor="n")
+                               fill="black", font="Times 10", anchor="n")
     OCanvas.pack()
     return (OCanvas, text)
 

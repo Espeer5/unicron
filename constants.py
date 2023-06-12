@@ -124,7 +124,7 @@ CMD_DICT = {
         "step": [-1, -1, -1, True, -1, -1, False, False, False, -1],
         "save": [-1, -1, -1, -1, True, -1, False, False, False, -1],
         "quit": [-1, -1, -1, -1, -1, -1, True, -1, False, -1],
-        "clear": [-1, -1, -1, -1, -1, -1, False, True, False, -1],
+        "clear": [True, False, -1, -1, -1, -1, False, True, False, -1],
         "reset": [-1, -1, -1, -1, -1, -1, -1, -1, -1, 1]
     }
 

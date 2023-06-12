@@ -93,6 +93,7 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
 
     try:
         while True:
+            print(flags)
             #Act on flags which do not prescribe a behavior
             if flags[const.QUIT]:
                 break
@@ -132,15 +133,22 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
                         subtarget = None
                         post("Norman cannot drive down blocked road", out)
                         print("Norman cannot drive down blocked road")
-                        if turn_count < 3:
-                            direction = pln.l_r_nearest_rd(graph.get_intersection(location), heading)
+                        direction = pln.l_r_nearest_rd(graph.get_intersection(location), heading)
+                        if direction == None:
+                            post("Stuck! Waiting for blockage to be removed", out)
+                            while graph.get_intersection(location).get_blockages()[heading] == const.BLK:
+                                act.center_block(ultraSense, location, heading, graph, out)
+                        else:
                             print("Nearest road to the " + direction)
                             heading = explore_turn(driveSys, IRSensor, ultraSense, direction,
                                         graph, location, heading, out, responses,
                                         resp_flag)
                             turn_count += 1
-                        else:
-                            post("Waiting for blockage to be removed ", out)
+                        if turn_count >= 3:
+                            post("Waiting for blockage to be removed", out)
+                            while graph.get_intersection(location).get_blockages()[heading] == const.BLK:
+                                act.center_block(ultraSense, location, heading, graph, out)
+
                     location, prev_loc, heading = act.adv_line_follow(driveSys, 
                                                                       IRSensor, 
                                                                       ultraSense, 
@@ -194,6 +202,10 @@ def master(flags, out, responses, resp_flag, state, map_num=None):
                     graph.driven_connection(prev_loc, location, heading)
                 flags[const.RESET] = False
                 post("Reset complete", out)
+                subtarget = None
+                cmd = const.CMD_DICT['explore']
+                cmd.append(None)
+                set_flags_to(flags, cmd)
             time.sleep(.2)
             if flags[const.GL_FLAG]:
                 while flags[const.DATA] == None:

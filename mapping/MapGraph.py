@@ -9,7 +9,7 @@ Date: 4/30/23
 from constants import CONDITIONS, UNK, UND, NNE, DRV, \
                       STREET_CONDITIONS, BLK, UNB, invert_h_map
 import pickle
-from interface.ui_util import post
+from interface.ui_util import post, get_resp
 from math import dist
 
 
@@ -227,7 +227,8 @@ class MapGraph:
         """
         self.get_intersection(location).set_connection(heading, NNE)
 
-    def markoff(self, location, angle, start_head, direction):
+
+    def markoff(self, location, angle, start_head, direction, out, responses, resp_flag):
         """
         Updates the graph after the robot has completed a turn, marking those 
         headings without streets as "NONE" and those with newly found streets
@@ -245,11 +246,11 @@ class MapGraph:
         for i in range(round(angle / 45) - 1):
             heading = (start_head + (dir_map[direction] * i)) % 8
             if inters.check_connection(heading) not in [UNK, NNE]:
-                raise Exception("Expected intersection is missing, aborting")
+                return False
             self.no_connection(location, heading)
         heading = (start_head + dir_map[direction] * (round(angle / 45) - 1)) % 8
         if inters.check_connection(heading) == NNE:
-            raise Exception("Nonexisting road found. Aborting")
+            return False
         if inters.check_connection(heading) != DRV:
             inters.set_connection(heading, UND)
         return True

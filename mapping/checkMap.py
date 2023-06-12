@@ -7,7 +7,7 @@ Date: 6/3/23
 """
 
 import constants as const
-from interface.ui_util import post, get_resp, init_state
+from interface.ui_util import post, get_resp, init_state, set_state
 
 
 def check_head(direction, graph, location, heading, orig_heading, ang, out, 
@@ -52,6 +52,7 @@ def check_end(sensor, graph, location, heading, out, responses, resp_flag, state
             prev_loc = (location[0] - const.heading_map[heading][0], 
             location[1] - const.heading_map[heading][1])
             set_state(state, location, heading)
+            graph.driven_connection(prev_loc, location, heading)
         graph.no_connection(location, heading)
     else:
         inter = graph.get_intersection(location)
@@ -62,6 +63,7 @@ def check_end(sensor, graph, location, heading, out, responses, resp_flag, state
             heading = state[1]
             prev_loc = (location[0] - const.heading_map[heading][0], 
             location[1] - const.heading_map[heading][1])
+            graph.driven_connection(prev_loc, location, heading)
             set_state(state, location, heading)
         if inter.check_connection(heading) != const.DRV:
             graph.get_intersection(location).set_connection(heading, const.UND)

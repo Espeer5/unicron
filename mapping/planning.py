@@ -12,7 +12,7 @@ import constants as const
 from mapping.graphics import Visualizer
 import pickle
 from math import dist, inf
-from constants import heading_map, UNK, UND, DRV, UNB, BLK
+from constants import heading_map, UNK, UND, DRV, UNB, BLK, NNE
 
 
 class Djikstra:
@@ -186,7 +186,7 @@ def l_r_nearest_rd(inter, heading):
     """Determines whether turning left or right if better for finding nearest road"""
     l_list = [inter.check_connection((heading + i) % 8) for i in range(1, 5)]
     r_list = [inter.check_connection((heading - i) % 8) for i in range(1, 5)]
-    for i in range(8):
+    for i in range(4):
         if l_list[i] == const.UND or l_list[i] == const.DRV:
             return "LEFT"
         elif r_list[i] == const.UND or r_list[i] == const.DRV:
@@ -222,8 +222,21 @@ def l_r_s_to_target(inter, heading, target):
     if dist(straight_loc, target) <= dist(left_loc, target) and \
         dist(straight_loc, target) <= dist(right_loc, target) and \
         inter.get_streets()[heading] == UND and inter.get_blockages()[heading] == UNB:
+        print("straight")
         return "STRAIGHT"
-    
+
+    go_straight = True
+    streets = inter.get_streets()
+    blockages = inter.get_blockages()
+    for i in range(8):
+        if (i % 4) != 0:
+            if (streets[(heading + i) % 8] == UNK or streets[(heading + i) % 8] == UND) and blockages[(heading + i) % 8] != BLK:
+                go_straight = False
+    if go_straight:
+        if streets[heading] == UND or streets[heading] == DRV:
+            print("straightER")
+            return "STRAIGHT"
+            
     dir_to_target = "LEFT"
     if dist(target, right_loc) < dist(target, left_loc):
         dir_to_target = "RIGHT"
@@ -262,6 +275,10 @@ def closest_subtarget(graph, location, heading, target, djik):
         djik.reset(subtarget)
         path = djik.gen_path(location)
         subheading = heading
+
+        if path == []:
+            continue
+
         if len(path) != 0:
             subheading = path[-1]
         # determine distances of adjacent intersections to target
@@ -280,10 +297,6 @@ def closest_subtarget(graph, location, heading, target, djik):
                     else:
                         distances.append(dist(new_loc, target))
         # check if there is a new closest option
-        #print("subtarget " + str(subtarget) + " has path " + str(path))
-        print("CHECKING SUB-T " + str(subtarget))
-        #print("distances: " + str(distances))
-
         for distance in distances:
             if distance < closest_distance:
                 closest_subtarget = subtarget

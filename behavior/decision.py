@@ -15,7 +15,7 @@ import mapping.checkMap as checks
 import mapping.planning as pln 
 from math import dist
 from mapping.MapGraph import unb_head
-from interface.ui_util import post
+from interface.ui_util import post, init_state, set_state, get_resp
 
 
 def explore_turn(driveSys, IRSensor, ultraSense, direction, graph, location, 
@@ -36,7 +36,9 @@ def explore_turn(driveSys, IRSensor, ultraSense, direction, graph, location,
     post("angle: " + str(ang), out)
 
     #Update the graph based on where a street was found
-    graph.markoff(location, ang, orig_head, direction[0])
+    if not graph.markoff(location, ang, orig_head, direction[0], out, responses, resp_flag):
+        post("Angle incorrect. Input true heading: ", out)
+        heading = int(get_resp(responses, out, resp_flag))
 
     #Check for blockages on the faced street
     if graph != None:
@@ -176,9 +178,11 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
     
     # Determine is destination is unreachable
     if graph.is_complete():
+        post("Clearing blockages!", out)
         graph.clear_blockages()
         if graph.is_complete() and not graph.contains(dest):
             post("Destination " + str(dest) + " unreachable", out)
+            done = True
             return (path, heading, graph, location, done, subtarget) 
 
     # If a path is found to destination, follow it
@@ -246,22 +250,23 @@ def manual_djik(driveSys, IRSensor, ultraSense, path, heading, graph, location, 
     # If path cannot be found to subtarget, reroute
     if path == []:
         subtarget = pln.closest_subtarget(graph, location, heading, dest, djik)
+        djik.reset(subtarget)
+        path = djik.gen_path(location)
         # If path still cannot be found then we need to clear blockages
-        if subtarget == None:
+        if path == []:
             post("Stuck! Clearing Blockages", out)
             graph.clear_blockages()
             djik.reset(subtarget)
             path = djik.gen_path(location)
             # If path still cannot be found then we are stuck
-            post("Norman is stuck! No route to " + str(dest) + " can be found", out)
-            done = True
-            return (path, heading, graph, location, done, subtarget)
-        djik.reset(subtarget)
-        path = djik.gen_path(location)
+            if path == []:
+                post("Norman is stuck! No route to " + str(dest) + " can be found", out)
+                done = True
+                return (path, heading, graph, location, done, subtarget)
         
-    post("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...", out)
-
+        
     # Follow djikstra generated path
+    post("Driving to (" + str(dest[0]) + ", " + str(dest[1]) + ")...", out)
     path_elem = path.pop(0)
     direction = pln.to_head(heading, path_elem, graph, location)
     while heading != path_elem:
