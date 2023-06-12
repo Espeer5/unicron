@@ -43,4 +43,4 @@ The robot accepts the following commands into the GUI:
 - Clear: Removes all blockages from the current map
 - Reset: (Must be called while in explore mode) - Allows the user to manually reset the robot heading and location from within explore mode, and select whether or not te clear the map
 
-![image](norman.jpg)
+![image](interface/images/norman.jpg)
