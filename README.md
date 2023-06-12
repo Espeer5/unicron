@@ -42,3 +42,5 @@ The robot accepts the following commands into the GUI:
 - Save: Saves the current map data structure to a pickle file upon reaching an intersection
 - Clear: Removes all blockages from the current map
 - Reset: (Must be called while in explore mode) - Allows the user to manually reset the robot heading and location from within explore mode, and select whether or not te clear the map
+
+![image](interface/images/norman.jpg)
